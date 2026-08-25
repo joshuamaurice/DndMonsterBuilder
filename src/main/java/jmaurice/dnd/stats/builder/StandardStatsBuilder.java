@@ -1,5 +1,8 @@
 package jmaurice.dnd.stats.builder;
 
+import java.util.List;
+
+import jmaurice.dnd.stats.ParseInput;
 import jmaurice.dnd.stats.builder.homebrew.Tyranids;
 import jmaurice.dnd.stats.builder.raw.basic.AbilityScores;
 import jmaurice.dnd.stats.builder.raw.basic.ArmorClass;
@@ -15,6 +18,7 @@ import jmaurice.dnd.stats.builder.raw.basic.Speeds;
 import jmaurice.dnd.stats.builder.raw.creaturetypes.Aberrations;
 import jmaurice.dnd.stats.builder.raw.creaturetypes.Constructs;
 import jmaurice.dnd.stats.impl.Stats;
+import jmaurice.dnd.stats.impl.StatsExecutor;
 import jmaurice.dnd.stats.impl.Value;
 
 public class StandardStatsBuilder {
@@ -51,6 +55,15 @@ public class StandardStatsBuilder {
         //
         stats.createPostLinks();
         stats.verifyNoUnmarkedRootsLeafs();
+        return stats;
+    }
+
+    public static Stats run(final List<String> input) {
+        final Stats stats = new StandardStatsBuilder().build();
+        for (final String input1 : input) {
+            ParseInput.parseApply(stats, input1);
+        }
+        new StatsExecutor(stats).execute();
         return stats;
     }
     
