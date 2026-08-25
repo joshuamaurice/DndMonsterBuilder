@@ -16,6 +16,8 @@ testing {
 }
 
 cleanEclipse {
+    delete '.classpath'
+    delete '.project'
     delete 'bin'
 }
 
