@@ -1,0 +1,21 @@
+## ignore gradle output files
+build/
+
+## ignore eclipse output files
+bin/
+test-output/
+
+## ignore output files from maven, old scripts, and (old) tests
+target/
+
+## ignore log files
+log
+*.log
+
+## ignore all files with file-names that begin with dot '.'
+.*
+## except these files
+!.helmignore
+!/.github
+!/.gitignore
+!/.claude

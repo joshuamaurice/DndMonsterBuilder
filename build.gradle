@@ -1,0 +1,31 @@
+plugins {
+    id 'application'
+    id 'eclipse'
+    id 'java-library'
+}
+
+dependencies {
+}
+
+testing {
+    suites {
+        test {
+            useTestNG('7.5.1')
+        }
+    }
+}
+
+cleanEclipse {
+    delete 'bin'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+application {
+    // Define the main class for the application.
+    mainClass = 'jmaurice.dnd.stats.Main'
+}

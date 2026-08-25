@@ -1,0 +1,25 @@
+pluginManagement {
+    //List the repositories that the build may use for finding plugins.
+    repositories {
+        //The repositories are searched in the order that they are declared here.
+        //Keep the external repos at the end of this list for performance reasons.
+        mavenLocal()
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+dependencyResolutionManagement {
+    //List the repositories that the build may use for finding artifacts (and not plugins).
+    repositories {
+        //The repositories are searched in the order that they are declared here.
+        //Keep the external repos at the end of this list for performance reasons.
+        mavenLocal()
+        gradlePluginPortal()
+        mavenCentral()
+    }
+    
+    //Make it more difficult for developers to add public internet repos in the build gradle files.
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS) 
+}
+
+rootProject.name = 'DndMobBuilder'
