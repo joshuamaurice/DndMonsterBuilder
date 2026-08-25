@@ -17,8 +17,8 @@ public class Saves extends BaseBuilder {
         saves.forEach(save -> agg(save, leaf, values -> sumAsInts(values)));
         
         saves.forEach(save -> agg("base " + save,                 leaf, values -> sumAsDoubles(values).floor())); //sumAsDoubles for partial save bonus multiclassing
-        saves.forEach(save -> to1(save,           "base " + save,       value -> value.source("base save")));
-        saves.forEach(save -> to1("base " + save, "good " + save,       new Value(2, "flat +2 for good save")));
+        saves.forEach(save -> to1(          save, "base " + save,       value  -> value.source("base save")));
+        saves.forEach(save -> to1("base " + save, "good " + save,                 new Value(2, "flat +2 for good save")));
         saves.forEach(save -> agg("good " + save,                 root, values -> new Value(true, first(values).source))); //TODO remove root
         
         to1("fortitude", "constitution modifier");
