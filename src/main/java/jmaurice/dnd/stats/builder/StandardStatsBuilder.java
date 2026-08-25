@@ -1,7 +1,5 @@
 package jmaurice.dnd.stats.builder;
 
-import java.util.List;
-
 import jmaurice.dnd.stats.ParseInput;
 import jmaurice.dnd.stats.builder.homebrew.Tyranids;
 import jmaurice.dnd.stats.builder.raw.basic.AbilityScores;
@@ -41,7 +39,7 @@ public class StandardStatsBuilder {
         new MiscBasics(stats).build();
         new NaturalWeapons(stats).build();
         new Saves(stats).build();
-        new SizeSpaceReach(stats).build();;
+        new SizeSpaceReach(stats).build();
         new Skills(stats).build();
         new Speeds(stats).build();
         
@@ -57,12 +55,10 @@ public class StandardStatsBuilder {
         stats.verifyNoUnmarkedRootsLeafs();
         return stats;
     }
-
-    public static Stats run(final List<String> input) {
+    
+    public static Stats run(final String input) {
         final Stats stats = new StandardStatsBuilder().build();
-        for (final String input1 : input) {
-            ParseInput.parseApply(stats, input1);
-        }
+        ParseInput.parseApply(stats, input);
         new StatsExecutor(stats).execute();
         return stats;
     }

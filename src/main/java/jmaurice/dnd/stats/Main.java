@@ -22,8 +22,7 @@ public class Main {
                 final String creatureName = creatureInput.getKey();
                 final String input = creatureInput.getValue();
                 
-                final List<String> inputSplit = Arrays.asList(input.split(";;;", -1)).stream().map(x -> x.trim()).filter(x -> ! x.isBlank()).toList();
-                final Stats stats = StandardStatsBuilder.run(inputSplit);
+                final Stats stats = StandardStatsBuilder.run(input);
 
                 System.out.println("output: " + creatureName);
                 for (final String statName : new TreeSet<>(stats.statNames())) {
