@@ -23,62 +23,45 @@ import org.xml.sax.SAXException;
 
 public class ReadFodsXml {
     
-    public static Map<String, String> readCombinedInputColumn(final File file, final String inputSheetName) throws SAXException, IOException, ParserConfigurationException {
-        final Document doc = DocumentBuilderFactory.newDefaultNSInstance().newDocumentBuilder().parse(file);
+    public static Map<String, Range> readSheets(final File file) {
+        final Map<String, Range> r = new LinkedHashMap<>();
+        final List<Element> sheets = readSheets2(file);
+        for (final Element sheet : sheets) {
+            final String sheetName = sheet.getAttributeNS("urn:oasis:names:tc:opendocument:xmlns:table:1.0", "name");
+            if (sheetName.isBlank())
+                throw new RuntimeException();
+            final Element table = getTable(sheet);
+            r.put(sheetName, getRange(table, 0, 0, -1, -1));
+        }
+        return r;
+    }
+    
+    public static Range readSheet(final File file, final String sheetName) {
+        final List<Element> sheets = readSheets2(file);
+        final Element sheet = getSheetByName(sheets, sheetName);
+        final Element table = getTable(sheet);
+        return getRange(table, 0, 0, -1, -1);
+    }
+    
+    private static List<Element> readSheets2(final File file) {
+        final Document doc;
+        try {
+            doc = DocumentBuilderFactory.newDefaultNSInstance().newDocumentBuilder().parse(file);
+        } catch (SAXException | IOException | ParserConfigurationException e) {
+            throw new RuntimeException(e);
+        }
         final Element officeDocument = doc.getDocumentElement();
         if ( ! qname(officeDocument).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:office:1.0", "document", "office")))
             throw new RuntimeException();
         final Element officeBody = (Element)val1(officeDocument.getElementsByTagName("office:body"));
         if ( ! qname(officeBody).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:office:1.0", "body", "office")))
             throw new RuntimeException();
-        final List<Element> spreadsheets = elements(children(officeBody));
-        for (final Element spreadsheet : spreadsheets) {
-            if ( ! qname(spreadsheet).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:office:1.0", "spreadsheet", "office")))
+        final List<Element> sheets = elements(children(officeBody));
+        for (final Element sheet : sheets) {
+            if ( ! qname(sheet).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:office:1.0", "spreadsheet", "office")))
                 throw new RuntimeException();
         }
-        final Element spreadsheet = getSpreadsheetByName(spreadsheets, inputSheetName);
-        final Element table = getTable(spreadsheet);
-        final List<Cell> row1 = row(getRange(table, 0, 0, 1, -1));
-        final int nNameCol = row1.stream().map(x -> x.content).toList().indexOf("Name");
-        final int nCombinedInputCol = row1.stream().map(x -> x.content).toList().indexOf("CombinedInput");
-        final List<Cell> names = new ArrayList<>(col(getRange(table, 0, nNameCol, -1, 1)));
-        final List<Cell> combinedInput = new ArrayList<>(col(getRange(table, 0, nCombinedInputCol, -1, 1)));
-        names.remove(0);
-        combinedInput.remove(0);
-        if (names.size() != combinedInput.size())
-            throw new RuntimeException();
-        final Map<String, String> m = new LinkedHashMap<>();
-        for (int i = 0; i < names.size(); ++i)
-            m.put(names.get(i).content, combinedInput.get(i).content);
-        return m;
-    }
-    
-    private static class Range {
-        List<List<Cell>> data = new ArrayList<>();
-    }
-    
-    private static class Cell {
-        String content;
-        String formula;
-        @Override public String toString() {
-            if (content == null && formula == null)
-                return "";
-            if (content != null && formula == null)
-                return content;
-            if (content == null && formula != null)
-                return "FORMULA[" + formula + "]";
-            if (content != null && formula != null)
-                return "FORMULA[" + formula + "]=" + content;
-            throw new RuntimeException();
-        }
-    }
-    
-    private static List<Cell> row(final Range range) {
-        return val1(range.data);
-    }
-    
-    private static List<Cell> col(final Range range) {
-        return range.data.stream().map(x -> val1(x)).toList();
+        return sheets;
     }
     
     private static Range getRange(final Element table, final int targetRow, final int targetCol, final int nTargetRows, final int nTargetCols) {
@@ -86,7 +69,7 @@ public class ReadFodsXml {
         final int targetEndCol = nTargetCols == -1 ? Integer.MAX_VALUE : targetCol + nTargetCols;
         if ( ! qname(table).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:table:1.0", "table", "table")))
             throw new RuntimeException("" + qname(table));
-        final Range range = new Range();
+        final List<List<Cell>> range = new ArrayList<>();
         final List<Element> rows = new ArrayList<>(elements(children(table)).stream().filter(x -> qname(x).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:table:1.0", "table-row", "table"))).toList());
         removeTrailingEmptyRows(rows);
         int r = 0;
@@ -99,7 +82,7 @@ public class ReadFodsXml {
                 if (r >= targetEndRow)
                     break;
                 if (r >= targetRow) {
-                    range.data.add(new ArrayList<>());
+                    range.add(new ArrayList<>());
                     final List<Element> cells = new ArrayList<>(elements(children(row)).stream().filter(x -> qname(x).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:table:1.0", "table-cell", "table"))).toList());
                     removeTrailingEmptyCells(cells);
                     int c = 0;
@@ -113,15 +96,16 @@ public class ReadFodsXml {
                                 break;
                             if (c >= targetCol) {
                                 final Cell c2 = new Cell();
-                                c2.content = val01(
-                                    elements(children(cell)).stream()
-                                    .filter(x -> qname(x).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:text:1.0", "p", "text")))
-                                    .toList()
-                                ).map(x -> getStringContent(x)).orElse(null);
-                                c2.formula = Optional.of(cell.getAttributeNS("urn:oasis:names:tc:opendocument:xmlns:table:1.0", "formula"))
+                                c2.content(
+                                        elements(children(cell)).stream()
+                                        .filter(x -> qname(x).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:text:1.0", "p", "text")))
+                                        .map(x -> getStringContent(x))
+                                        .collect(Collectors.joining())
+                                        );
+                                c2.formula( Optional.of(cell.getAttributeNS("urn:oasis:names:tc:opendocument:xmlns:table:1.0", "formula"))
                                         .filter(x -> ! x.isEmpty())
-                                        .orElse(null);
-                                range.data.get(range.data.size() - 1).add(c2);
+                                        .orElse(null));
+                                range.get(range.size() - 1).add(c2);
                             }
                             ++c;
                         }
@@ -130,7 +114,9 @@ public class ReadFodsXml {
                 ++r;
             }
         }
-        return range;
+        final int numCols = range.stream().map(x -> x.size()).max((x,y) -> x-y).get();
+        range.forEach(row -> IntStream.range(0, numCols - row.size()).forEach(i -> row.add(new Cell())));
+        return new Range(range);
     }
     
     private static void removeTrailingEmptyRows(final List<Element> rows) {
@@ -172,20 +158,20 @@ public class ReadFodsXml {
         return content == null && formula == null;
     }
     
-    private static Element getSpreadsheetByName(final List<Element> spreadsheets, final String sheetName) {
-        for (final Element spreadsheet : spreadsheets) {
-            if ( ! qname(spreadsheet).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:office:1.0", "spreadsheet", "office")))
+    private static Element getSheetByName(final List<Element> sheets, final String sheetName) {
+        for (final Element sheet : sheets) {
+            if ( ! qname(sheet).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:office:1.0", "spreadsheet", "office")))
                 throw new RuntimeException();
-            if (getTable(spreadsheet).getAttributeNS("urn:oasis:names:tc:opendocument:xmlns:table:1.0", "name").equals(sheetName))
-                return spreadsheet;
+            if (getTable(sheet).getAttributeNS("urn:oasis:names:tc:opendocument:xmlns:table:1.0", "name").equals(sheetName))
+                return sheet;
         }
         throw new RuntimeException();
     }
     
-    private static Element getTable(final Element spreadsheet) {
-        if ( ! qname(spreadsheet).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:office:1.0", "spreadsheet", "office")))
+    private static Element getTable(final Element sheet) {
+        if ( ! qname(sheet).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:office:1.0", "spreadsheet", "office")))
             throw new RuntimeException();
-        final Element table = val1(elements(children(spreadsheet)).stream().filter(x -> qname(x).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:table:1.0", "table", "table"))).toList());
+        final Element table = val1(elements(children(sheet)).stream().filter(x -> qname(x).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:table:1.0", "table", "table"))).toList());
         if ( ! qname(table).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:table:1.0", "table", "table")))
             throw new RuntimeException("" + qname(table));
         return table;

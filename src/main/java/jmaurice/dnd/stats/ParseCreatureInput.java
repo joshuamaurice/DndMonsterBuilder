@@ -17,6 +17,8 @@ public class ParseCreatureInput {
     private static Pattern p3 = Pattern.compile("^([^\"]+)$");
     
     public static void parseApply(final Stats stats, final String input1) {
+        if (input1 == null)
+            throw new NullPointerException();
         final List<String> input1s = Arrays.asList(input1.split(";;;", -1)).stream().map(x -> x.trim()).toList();
         for (final String input2 : input1s) {
             if (input2.isEmpty())
