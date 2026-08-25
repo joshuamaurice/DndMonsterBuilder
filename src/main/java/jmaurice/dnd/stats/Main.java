@@ -6,17 +6,17 @@ import java.util.Map;
 import java.util.TreeSet;
 
 import jmaurice.dnd.stats.builder.StandardStatsBuilder;
+import jmaurice.dnd.stats.fods.ReadFodsXml;
 import jmaurice.dnd.stats.impl.Stat;
 import jmaurice.dnd.stats.impl.Stats;
 import jmaurice.dnd.stats.impl.Value;
-import jmaurice.dnd.stats.xml.ReadXml;
 
 public class Main {
 
     public static void main(String[] args) {
         try {
             System.out.println("Main: starting");
-            final Map<String, String> creatureInputs = ReadXml.readCombinedInputColumn(new File("../data/stats.fods"), "Sheet1");
+            final Map<String, String> creatureInputs = ReadFodsXml.readCombinedInputColumn(new File("../data/stats.fods"), "Sheet1");
             for (final Map.Entry<String, String> creatureInput : creatureInputs.entrySet()) {
                 final String creatureName = creatureInput.getKey();
                 final String input = creatureInput.getValue();

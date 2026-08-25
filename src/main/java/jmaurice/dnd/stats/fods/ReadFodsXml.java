@@ -1,4 +1,4 @@
-package jmaurice.dnd.stats.xml;
+package jmaurice.dnd.stats.fods;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,7 +21,7 @@ import org.w3c.dom.NodeList;
 import org.w3c.dom.Text;
 import org.xml.sax.SAXException;
 
-public class ReadXml {
+public class ReadFodsXml {
     
     public static Map<String, String> readCombinedInputColumn(final File file, final String inputSheetName) throws SAXException, IOException, ParserConfigurationException {
         final Document doc = DocumentBuilderFactory.newDefaultNSInstance().newDocumentBuilder().parse(file);
