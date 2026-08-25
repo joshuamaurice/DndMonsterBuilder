@@ -25,7 +25,7 @@ public class Skills extends BaseBuilder {
                 "appraise", "linguistics", "psycraft", "spellcraft", //TODO craft
                 "knowledge arcana",  "knowledge dungeoneering", "knowledge engineering", "knowledge geography", 
                 "knowledge history", "knowledge local",         "knowledge nature",      "knowledge nobility",
-                "knowledge planes",  "knowledge psionics",      "knowledgeTactics"
+                "knowledge planes",  "knowledge psionics",      "knowledge tactics"
                 );
         final List<String> wisSkills = Arrays.asList(
                 "heal", "perception", "sense motive", "survival" //TODO profession
