@@ -1,6 +1,6 @@
 package jmaurice.dnd.stats.builder;
 
-import jmaurice.dnd.stats.ParseInput;
+import jmaurice.dnd.stats.ParseCreatureInput;
 import jmaurice.dnd.stats.builder.homebrew.Tyranids;
 import jmaurice.dnd.stats.builder.raw.basic.AbilityScores;
 import jmaurice.dnd.stats.builder.raw.basic.ArmorClass;
@@ -58,7 +58,7 @@ public class StandardStatsBuilder {
     
     public static Stats run(final String input) {
         final Stats stats = new StandardStatsBuilder().build();
-        ParseInput.parseApply(stats, input);
+        ParseCreatureInput.parseApply(stats, input);
         new StatsExecutor(stats).execute();
         return stats;
     }

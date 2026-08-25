@@ -9,7 +9,7 @@ import jmaurice.dnd.stats.impl.Stat;
 import jmaurice.dnd.stats.impl.Stats;
 import jmaurice.dnd.stats.impl.Value;
 
-public class ParseInput {
+public class ParseCreatureInput {
     
     private static Pattern numberPattern = Pattern.compile("^[-+0-9.]+$");
     private static Pattern p1 = Pattern.compile("^\"([^\"]*)\" +([^\"]+)$");
