@@ -57,7 +57,7 @@ public class Skills extends BaseBuilder {
             return null;
         }));
         
-        allSkills.forEach(skill -> agg(skill + " class skill", root, input -> new Value(3, first(input).source))); //TODO remove
+        allSkills.forEach(skill -> agg(skill + " class skill", root, input -> new Value(3, first(input).source))); //TODO remove root
         allSkills.forEach(skill -> agg(skill + " ranks", root, input -> sumAsInts(input)));
         //TODO max ranks
         allSkills.forEach(skill -> agg(skill, input -> sumAsInts(input)));
