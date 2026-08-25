@@ -2,6 +2,7 @@ package jmaurice.dnd.stats.builder.raw.basic;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import jmaurice.dnd.stats.builder.BaseBuilder;
@@ -45,13 +46,23 @@ public class Skills extends BaseBuilder {
         allSkills.addAll(chaSkills);
         
         aggN("skills", leaf, values -> sort(values));
-        allSkills.forEach(skill -> to1("skills", skill, value -> new Value(skill + " " + withSign(value.getIntValue()), "")));
+        allSkills.forEach(skill -> to1("skills", skill, value -> new Value(skill + " " + withSign(value.getIntValue()), value.source)));
+        
+        aggN("trained skills", leaf, values -> sort(values));
+        allSkills.forEach(skill -> stats.input("trained skills", Arrays.asList(skill, skill + " ranks"), stats -> {
+            final Value skillMod = stats.get(skill).val1();
+            final Integer skillRanks = stats.get(skill + " ranks").val01().map(x -> x.getIntValue()).orElse(null);
+            if (skillRanks != null)
+                return Collections.singletonList(new Value(skill + " " + withSign(skillMod.getIntValue()), skillMod.source));
+            return null;
+        }));
         
         allSkills.forEach(skill -> agg(skill + " class skill", root, input -> new Value(3, first(input).source))); //TODO remove
         allSkills.forEach(skill -> agg(skill + " ranks", root, input -> sumAsInts(input)));
+        //TODO max ranks
         allSkills.forEach(skill -> agg(skill, input -> sumAsInts(input)));
         
-        allSkills.forEach(skill -> to1(skill, skill + " ranks",       input -> new Value(3, input.source + " ranks")));
+        allSkills.forEach(skill -> to1(skill, skill + " ranks",       input -> input.asInt().source("ranks")));
         allSkills.forEach(skill -> to1(skill, skill + " class skill", input -> new Value(3, input.source + " class skill")));
         strSkills.forEach(skill -> to1(skill, "strength modifier"));
         dexSkills.forEach(skill -> to1(skill, "dexterity modifier"));
