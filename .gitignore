@@ -12,6 +12,9 @@ target/
 log
 *.log
 
+## ignore gradle/wrapper/ which is automatically downloade by gradle
+/gradle/wrapper/
+
 ## ignore all files with file-names that begin with dot '.'
 .*
 ## except these files
