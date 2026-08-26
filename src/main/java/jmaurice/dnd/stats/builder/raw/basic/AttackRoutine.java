@@ -10,10 +10,10 @@ import java.util.Optional;
 import java.util.stream.IntStream;
 
 import jmaurice.dnd.stats.builder.BaseBuilder;
-import jmaurice.dnd.stats.impl.ReadOnlyStat;
-import jmaurice.dnd.stats.impl.Stat;
+import jmaurice.dnd.stats.impl.ReadOnlyValuedStat;
 import jmaurice.dnd.stats.impl.Stats;
 import jmaurice.dnd.stats.impl.Value;
+import jmaurice.dnd.stats.impl.ValuedStat;
 
 public class AttackRoutine extends BaseBuilder {
 
@@ -87,18 +87,18 @@ public class AttackRoutine extends BaseBuilder {
             if (weapons.size() > weaponIds.size())
                 throw new RuntimeException("too many weapons: " + weapons.keySet());
     
-            final Stat weaponNamesStat = stats.get("weapon names");
+            final ValuedStat weaponNamesStat = stats.get("weapon names");
             if (weaponNamesStat.getValues().size() > 0)
                 throw new RuntimeException("weapon names stat should not be populated");
             weaponNamesStat.setValues(weapons.keySet().stream().map(x -> new Value(x)).toList());
     
-            final Stat usingUnarmedStrikesStat = stats.get("using unarmed strikes");
+            final ValuedStat usingUnarmedStrikesStat = stats.get("using unarmed strikes");
             if (usingUnarmedStrikesStat.getValues().size() > 0)
                 throw new RuntimeException("using unarmed strikes stat should not be populated");
             if (weapons.keySet().contains("unarmed"))
                 usingUnarmedStrikesStat.setValues(Collections.singletonList(new Value(true)));
     
-            final Stat usingManufacturedWeaponsStat = stats.get("using manufactured weapons");
+            final ValuedStat usingManufacturedWeaponsStat = stats.get("using manufactured weapons");
             if (usingManufacturedWeaponsStat.getValues().size() > 0)
                 throw new RuntimeException("using manufactured weapons stat should not be populated");
             boolean usingManufacturedWeapons = false;
@@ -118,7 +118,7 @@ public class AttackRoutine extends BaseBuilder {
             int weaponId = 0;
             for (final Map.Entry<String, Map<String, List<String>>> weapon : weapons.entrySet()) {
                 ++weaponId;
-                final Stat weaponProperties = stats.get("weapon " + weaponId + " properties");
+                final ValuedStat weaponProperties = stats.get("weapon " + weaponId + " properties");
                 if (weaponProperties.getValues().size() > 0)
                     throw new RuntimeException("weapon " + weaponId + " properties stat should not be populated");
                 final List<Value> weaponPropertiesValues = new ArrayList<>();
@@ -161,9 +161,9 @@ public class AttackRoutine extends BaseBuilder {
                 if (propsList.isEmpty())
                     return;
                 final List<String> weaponNames = readOnlyStats.get("weapon names").getValues().stream().map(x -> x.getStringValue()).toList();
-                final Stat attackRoutineStat = stats.get("weapon " + weaponId + " attack routine");
-                final Stat attackModifiersStat = stats.get("weapon " + weaponId + " attack modifiers"); //for debuggability
-                final Stat damageModifiersStat = stats.get("weapon " + weaponId + " damage modifiers"); //for debuggability
+                final ValuedStat attackRoutineStat = stats.get("weapon " + weaponId + " attack routine");
+                final ValuedStat attackModifiersStat = stats.get("weapon " + weaponId + " attack modifiers"); //for debuggability
+                final ValuedStat damageModifiersStat = stats.get("weapon " + weaponId + " damage modifiers"); //for debuggability
                 final Integer strengthModifier = readOnlyStats.get("strength modifier").val01().map(x -> x.getIntValue()).orElse(null);
                 final Integer dexterityModifier = readOnlyStats.get("dexterity modifier").val01().map(x -> x.getIntValue()).orElse(null);
                 final boolean globalFinesseDexToDamage = readOnlyStats.get("finesse dex to damage").val01().map(x -> true).orElse(false);
@@ -371,9 +371,9 @@ public class AttackRoutine extends BaseBuilder {
             
         final List<String> individualAttackRoutineNames = weaponIds.stream().map(x -> "weapon " + x + " attack routine").toList();
         stats.post("generate attack routine", Arrays.asList("attack routine"), individualAttackRoutineNames, (writeableStats, readOnlyStats) -> {
-            final List<ReadOnlyStat> individualAttackRoutines = weaponIds.stream().map(x -> readOnlyStats.get("weapon " + x + " attack routine")).toList();
+            final List<ReadOnlyValuedStat> individualAttackRoutines = weaponIds.stream().map(x -> readOnlyStats.get("weapon " + x + " attack routine")).toList();
             final StringBuilder fullAttackRoutine = new StringBuilder();
-            for (final ReadOnlyStat individualAttackRoutine : individualAttackRoutines) {
+            for (final ReadOnlyValuedStat individualAttackRoutine : individualAttackRoutines) {
                 final Value x = individualAttackRoutine.val01().orElse(null);
                 if (x == null)
                     continue;

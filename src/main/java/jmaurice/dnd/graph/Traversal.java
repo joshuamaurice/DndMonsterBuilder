@@ -1,0 +1,72 @@
+package jmaurice.dnd.graph;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+
+public class Traversal {
+
+    public static <Node> void ordered(
+            final Graph<Node> graph,
+            final Graph<Node> inverse,
+            final Consumer<Node> action,
+            final Executor executor
+            ) throws InterruptedException {
+        final Map<Node, Integer> remaining = new ConcurrentHashMap<>();
+        inverse.forEach((node, edges) -> remaining.put(node, edges.size()));
+        final Semaphore completion = new Semaphore(0);
+        final AtomicInteger count = new AtomicInteger();
+        final List<RuntimeException> errors = new CopyOnWriteArrayList<>();
+        for (final Node root : inverse.leafs()) {
+            count.incrementAndGet();
+            executor.execute(() -> ordered2(graph, action, executor, root, remaining, completion, count, errors));
+        }
+        if (0 == count.get()) {
+            completion.release();
+        }
+        completion.acquire();
+        if ( ! errors.isEmpty()) {
+            final RuntimeException e1 = new RuntimeException();
+            for (final RuntimeException e2 : errors) {
+                e1.addSuppressed(e2);
+            }
+            throw e1;
+        }
+    }
+    
+    private static <Node> void ordered2(
+            final Graph<Node> graph,
+            final Consumer<Node> action,
+            final Executor executor,
+            final Node node,
+            final Map<Node, Integer> remaining,
+            final Semaphore completion,
+            final AtomicInteger count,
+            final List<RuntimeException> errors
+            ) {
+        try {
+            action.accept(node);
+        } catch (Exception e) {
+            errors.add(new RuntimeException("Error on node " + node + ". Error: " + e.getMessage(), e));
+            completion.release();
+            return;
+        }
+        if ( ! errors.isEmpty())
+            return;
+        for (final Node nextNode : graph.edges(node)) {
+            if (0 == remaining.compute(nextNode, (k,v) -> --v)) {
+                count.incrementAndGet();
+                executor.execute(() -> ordered2(graph, action, executor, nextNode, remaining, completion, count, errors));
+            }
+        }
+        if (0 == count.decrementAndGet()) {
+            completion.release();
+        }
+    }
+
+}

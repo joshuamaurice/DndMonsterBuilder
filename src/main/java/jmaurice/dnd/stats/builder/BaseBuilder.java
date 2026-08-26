@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
-import jmaurice.dnd.stats.impl.ReadOnlyStat;
+import jmaurice.dnd.stats.impl.ReadOnlyValuedStat;
 import jmaurice.dnd.stats.impl.Stats;
 import jmaurice.dnd.stats.impl.Value;
 
@@ -81,7 +81,7 @@ public class BaseBuilder {
     
     /** the rule will not be called when the input is empty aka zero-values */
     protected void to1(String outputStatName, String inputStatName, Function<Value, Value> rule) {
-        final Function<Map<String, ReadOnlyStat>, List<Value>> rule2 = stats -> {
+        final Function<Map<String, ReadOnlyValuedStat>, List<Value>> rule2 = stats -> {
             Optional<Value> inputValue = stats.get(inputStatName).val01();
             if (inputValue.isEmpty())
                 return Collections.emptyList();
@@ -97,7 +97,7 @@ public class BaseBuilder {
     
     /** the rule will not be called when the input is empty aka zero-values */
     protected void toN(String outputStatName, String inputStatName, Function<List<Value>, List<Value>> rule) {
-        final Function<Map<String, ReadOnlyStat>, List<Value>> rule2 = stats -> {
+        final Function<Map<String, ReadOnlyValuedStat>, List<Value>> rule2 = stats -> {
             List<Value> inputValues = stats.get(inputStatName).getValues();
             if (inputValues.isEmpty())
                 return Collections.emptyList();
@@ -110,8 +110,8 @@ public class BaseBuilder {
     }
     
     /** the rule will always be called; there is no implicit short-circuiting when some or all of the input is empty */
-    protected void input(String outputStatName, List<String> inputStatNames, Function<Map<String, ReadOnlyStat>, Value> rule) {
-        final Function<Map<String, ReadOnlyStat>, List<Value>> rule2 = input -> list01(rule.apply(input));
+    protected void input(String outputStatName, List<String> inputStatNames, Function<Map<String, ReadOnlyValuedStat>, Value> rule) {
+        final Function<Map<String, ReadOnlyValuedStat>, List<Value>> rule2 = input -> list01(rule.apply(input));
         stats.input(outputStatName, inputStatNames, rule2);
     }
     
@@ -195,11 +195,11 @@ public class BaseBuilder {
         return max;
     }
 
-    protected Value maxAsDoubles(Map<String, ReadOnlyStat> stats) {
+    protected Value maxAsDoubles(Map<String, ReadOnlyValuedStat> stats) {
         return maxAsDoubles(stats.values());
     }
     
-    protected Value maxAsDoubles(Collection<ReadOnlyStat> stats) {
+    protected Value maxAsDoubles(Collection<ReadOnlyValuedStat> stats) {
         return maxAsDoubles(stats.stream().flatMap(stat -> stat.getValues().stream()).toList());
     }
     
@@ -212,11 +212,11 @@ public class BaseBuilder {
         return max;
     }
 
-    protected Value maxAsInts(Map<String, ReadOnlyStat> stats) {
+    protected Value maxAsInts(Map<String, ReadOnlyValuedStat> stats) {
         return maxAsInts(stats.values());
     }
     
-    protected Value maxAsInts(Collection<ReadOnlyStat> stats) {
+    protected Value maxAsInts(Collection<ReadOnlyValuedStat> stats) {
         return maxAsInts(stats.stream().flatMap(stat -> stat.getValues().stream()).toList());
     }
     

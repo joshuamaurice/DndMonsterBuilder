@@ -6,5 +6,5 @@ import java.util.function.Function;
 
 public class InputRule {
     public List<String> inputStatNames;
-    public Function<Map<String, ReadOnlyStat>, List<Value>> rule;
+    public Function<Map<String, ReadOnlyValuedStat>, List<Value>> rule;
 }

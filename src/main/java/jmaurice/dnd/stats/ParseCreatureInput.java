@@ -2,12 +2,12 @@ package jmaurice.dnd.stats;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import jmaurice.dnd.stats.impl.Stat;
-import jmaurice.dnd.stats.impl.Stats;
 import jmaurice.dnd.stats.impl.Value;
+import jmaurice.dnd.stats.impl.ValuedStat;
 
 public class ParseCreatureInput {
     
@@ -16,7 +16,7 @@ public class ParseCreatureInput {
     private static Pattern p2 = Pattern.compile("^([^ ]+) +([^\"]+)$");
     private static Pattern p3 = Pattern.compile("^([^\"]+)$");
     
-    public static void parseApply(final Stats stats, final String input1) {
+    public static void parseApply(final Map<String, ValuedStat> stats, final String input1) {
         if (input1 == null)
             throw new NullPointerException();
         final List<String> input1s = Arrays.asList(input1.split(";;;", -1)).stream().map(x -> x.trim()).toList();
@@ -36,7 +36,7 @@ public class ParseCreatureInput {
                 if (matcher.matches()) {
                     final String name = matcher.group(2).trim();
                     final String value = matcher.group(1);
-                    final Stat stat = stats.getStat(name);
+                    final ValuedStat stat = stats.get(name);
                     if (stat == null)
                         throw new RuntimeException("unrecognized stat name: " + name);
                     stat.addInitialValue(new Value(value, "input"));
@@ -46,7 +46,7 @@ public class ParseCreatureInput {
                 if (matcher.matches()) {
                     final String name = matcher.group(2).trim();
                     final String value = matcher.group(1);
-                    final Stat stat = stats.getStat(name);
+                    final ValuedStat stat = stats.get(name);
                     if (stat == null)
                         throw new RuntimeException("unrecognized stat name: " + name);
                     stat.addInitialValue(new Value(value, "input"));
@@ -54,7 +54,8 @@ public class ParseCreatureInput {
                 }
                 matcher = p3.matcher(input3);
                 if (matcher.matches()) {
-                    final Stat stat = stats.getStat(input3);
+                    final String name = input3;
+                    final ValuedStat stat = stats.get(name);
                     if (stat != null) {
                         stat.addInitialValue(new Value(true, "input"));
                         continue;

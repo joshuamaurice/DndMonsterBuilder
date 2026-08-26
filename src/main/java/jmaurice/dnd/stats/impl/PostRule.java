@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 
 public class PostRule {
-    public List<String> postStatNames;
-    public List<String> otherInputStatNames;
-    public BiConsumer<Map<String, Stat>, Map<String, ReadOnlyStat>> rule;
+    public List<String> writableStatNames;
+    public List<String> readOnlyStatNames;
+    public BiConsumer<Map<String, ValuedStat>, Map<String, ReadOnlyValuedStat>> rule;
 }

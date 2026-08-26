@@ -26,10 +26,14 @@ public class ParseCreatureInputsFromSheet {
             throw new RuntimeException();
         final Map<String, String> m = new LinkedHashMap<>();
         for (int i = 0; i < names.size(); ++i) {
+            if (names.get(i).content() == null)
+                continue;
             if (names.get(i).content().isBlank())
                 continue;
             if (names.get(i).content().trim().equals("#"))
                 continue;
+            if (m.get(names.get(i).content()) != null)
+                throw new RuntimeException("duplicate creature name: " + names.get(i).content());
             m.put(names.get(i).content(), combinedInput.get(i).content());
         }
         return m;

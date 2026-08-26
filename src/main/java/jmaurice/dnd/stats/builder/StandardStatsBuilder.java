@@ -1,6 +1,5 @@
 package jmaurice.dnd.stats.builder;
 
-import jmaurice.dnd.stats.ParseCreatureInput;
 import jmaurice.dnd.stats.builder.homebrew.Tyranids;
 import jmaurice.dnd.stats.builder.raw.basic.AbilityScores;
 import jmaurice.dnd.stats.builder.raw.basic.ArmorClass;
@@ -16,8 +15,6 @@ import jmaurice.dnd.stats.builder.raw.basic.Speeds;
 import jmaurice.dnd.stats.builder.raw.creaturetypes.Aberrations;
 import jmaurice.dnd.stats.builder.raw.creaturetypes.Constructs;
 import jmaurice.dnd.stats.impl.Stats;
-import jmaurice.dnd.stats.impl.StatsExecutor;
-import jmaurice.dnd.stats.impl.Value;
 
 public class StandardStatsBuilder {
     
@@ -27,8 +24,7 @@ public class StandardStatsBuilder {
     
     public Stats build() {
         stats = new Stats();
-        stats.getOrCreateStat("default").addInitialValue(new Value("true", "default"));
-        stats.getStat("default").setRoot(true);
+        stats.getOrCreateStat("default").setRoot(true);
         
         //RAW basics
         new AbilityScores(stats).build();
@@ -51,15 +47,7 @@ public class StandardStatsBuilder {
         new Tyranids(stats).build();
         
         //
-        stats.createPostLinks();
-        stats.verifyNoUnmarkedRootsLeafs();
-        return stats;
-    }
-    
-    public static Stats run(final String input) {
-        final Stats stats = new StandardStatsBuilder().build();
-        ParseCreatureInput.parseApply(stats, input);
-        new StatsExecutor(stats).execute();
+        stats.initializeGraphAndInverseGraph();
         return stats;
     }
     
