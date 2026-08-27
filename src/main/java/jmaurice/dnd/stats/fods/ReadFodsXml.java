@@ -30,17 +30,20 @@ public class ReadFodsXml {
             final String sheetName = sheet.getAttributeNS("urn:oasis:names:tc:opendocument:xmlns:table:1.0", "name");
             if (sheetName.isBlank())
                 throw new RuntimeException();
-            final Element table = getTable(sheet);
-            r.put(sheetName, getRange(table, 0, 0, -1, -1));
+            r.put(sheetName, getRange(sheet, 0, 0, -1, -1));
         }
         return r;
     }
     
     public static Range readSheet(final File file, final String sheetName) {
         final List<Element> sheets = readSheets2(file);
-        final Element sheet = getSheetByName(sheets, sheetName);
-        final Element table = getTable(sheet);
-        return getRange(table, 0, 0, -1, -1);
+        for (final Element sheet : sheets) {
+            final String sheetName2 = sheet.getAttributeNS("urn:oasis:names:tc:opendocument:xmlns:table:1.0", "name");
+            if (sheetName.equals(sheetName2)) {
+                return getRange(sheet, 0, 0, -1, -1);
+            }
+        }
+        return null;
     }
     
     private static List<Element> readSheets2(final File file) {
@@ -56,12 +59,15 @@ public class ReadFodsXml {
         final Element officeBody = (Element)val1(officeDocument.getElementsByTagName("office:body"));
         if ( ! qname(officeBody).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:office:1.0", "body", "office")))
             throw new RuntimeException();
-        final List<Element> sheets = elements(children(officeBody));
-        for (final Element sheet : sheets) {
-            if ( ! qname(sheet).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:office:1.0", "spreadsheet", "office")))
-                throw new RuntimeException();
+        final Element spreadsheet = val1(elements(children(officeBody)));
+        if ( ! qname(spreadsheet).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:office:1.0", "spreadsheet", "office")))
+            throw new RuntimeException();
+        final List<Element> tables = elements(children(spreadsheet)).stream().filter(x -> qname(x).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:table:1.0", "table", "table"))).toList();
+        for (final Element table : tables) {
+            if ( ! qname(table).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:table:1.0", "table", "table")))
+                throw new RuntimeException("" + qname(table));
         }
-        return sheets;
+        return tables;
     }
     
     private static Range getRange(final Element table, final int targetRow, final int targetCol, final int nTargetRows, final int nTargetCols) {
@@ -158,25 +164,6 @@ public class ReadFodsXml {
         return content == null && formula == null;
     }
     
-    private static Element getSheetByName(final List<Element> sheets, final String sheetName) {
-        for (final Element sheet : sheets) {
-            if ( ! qname(sheet).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:office:1.0", "spreadsheet", "office")))
-                throw new RuntimeException();
-            if (getTable(sheet).getAttributeNS("urn:oasis:names:tc:opendocument:xmlns:table:1.0", "name").equals(sheetName))
-                return sheet;
-        }
-        throw new RuntimeException();
-    }
-    
-    private static Element getTable(final Element sheet) {
-        if ( ! qname(sheet).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:office:1.0", "spreadsheet", "office")))
-            throw new RuntimeException();
-        final Element table = val1(elements(children(sheet)).stream().filter(x -> qname(x).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:table:1.0", "table", "table"))).toList());
-        if ( ! qname(table).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:table:1.0", "table", "table")))
-            throw new RuntimeException("" + qname(table));
-        return table;
-    }
-
     private static QName qname(final Element x) {
         return new QName(x.getNamespaceURI(), x.getLocalName(), x.getPrefix());
     }
@@ -220,8 +207,24 @@ public class ReadFodsXml {
     private static String getStringContent(final Element input) {
         return children(input).stream()
                 .filter(x -> x.getNodeType() != Node.COMMENT_NODE)
-                .map(x -> (Text)x)
-                .map(x -> x.getNodeValue())
+                .map(x -> { 
+                    if (x.getNodeType() == Node.TEXT_NODE) 
+                        return ((Text)x).getNodeValue();
+                    if (x.getNodeType() == Node.ELEMENT_NODE) {
+                        final Element element = (Element)x;
+                        if (qname(element).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:text:1.0", "s", "text"))) {
+                            final String count = element.getAttributeNS("urn:oasis:names:tc:opendocument:xmlns:text:1.0", "c");
+                            if (count.isEmpty())
+                                return " ";
+                            return " ".repeat(Integer.parseInt(count));
+                        }
+                        if (qname(element).equals(new QName("urn:oasis:names:tc:opendocument:xmlns:text:1.0", "span", "text"))) {
+                            return getStringContent(element);
+                        }
+                        throw new RuntimeException("Unexpected element: " + qname(element));
+                    }
+                    throw new RuntimeException("Unexpected node. getNodeType: " + x.getNodeType());
+                })
                 .collect(Collectors.joining());
     }
 
