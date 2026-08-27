@@ -47,7 +47,6 @@ public class Main {
         final Map<String, String> creatureInputs = ParseCreatureInputsFromSheet.read(inputFile, inputFileSheetName);
         for (final Map.Entry<String, String> creatureInput : creatureInputs.entrySet()) {
             final String creatureName = creatureInput.getKey();
-            System.out.println("updateOutputFile: " + creatureName);
             try {
                 final String input = creatureInput.getValue();
                 
@@ -55,7 +54,6 @@ public class Main {
                 final Map<String, ValuedStat> valuedStats = stats.statNames().stream()
                         .collect(Collectors.toMap(name -> name, name -> new ValuedStat(stats.getStat(name))));
                 ParseCreatureInput.parseApply(valuedStats, input);
-                System.out.println(valuedStats.entrySet().stream().filter(x -> x.getValue().getValues().size() > 0).toList());
                 StatsExecutor.execute(stats, valuedStats);
                 final String creatureOutput = new TreeSet<>(valuedStats.keySet()).stream()
                         .map(statName -> valuedStats.get(statName))
@@ -68,8 +66,7 @@ public class Main {
                 outputFileContent.append(creatureOutput.replace("\"", "\"\""));
                 outputFileContent.append("\"");
             } catch (final Exception e) {
-                System.err.println("error running: " + creatureName);
-                e.printStackTrace();
+                new RuntimeException("Error running creature " + creatureName, e).printStackTrace();;
                 outputFileContent.append(creatureName);
                 outputFileContent.append("\t");
                 outputFileContent.append("\"");
