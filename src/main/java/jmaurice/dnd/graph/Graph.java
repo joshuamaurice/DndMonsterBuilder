@@ -13,6 +13,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class Graph<Node> {
     
@@ -87,12 +88,15 @@ public class Graph<Node> {
         return Collections.unmodifiableSet(edges.keySet());
     }
     
-    public Iterable<Node> leafs() {
-        return () -> edges.entrySet().stream().filter(x -> x.getValue().isEmpty()).map(x -> x.getKey()).iterator();
+    public Set<Node> leafs() {
+        return edges.entrySet().stream().filter(x -> x.getValue().isEmpty()).map(x -> x.getKey()).collect(Collectors.toSet());
     }
 
     public Set<Node> edges(final Node node) {
-        return Collections.unmodifiableSet(edges.get(node));
+        final Set<Node> x = edges.get(node);
+        if (x == null)
+            throw new IllegalArgumentException("unknown node: " + node);
+        return Collections.unmodifiableSet(x);
     }
     
     public void forEach(final BiConsumer<Node, Set<Node>> action) {
@@ -108,8 +112,12 @@ public class Graph<Node> {
             inverse.edges.put(node, new LinkedHashSet<>());
         }
         for (final Map.Entry<Node, Set<Node>> node : edges.entrySet()) {
+            final Node node2 = node.getKey();
             for (final Node out : node.getValue()) {
-                inverse.edges.get(out).add(node.getKey());
+                final Set<Node> outEdgesSet = inverse.edges.get(out);
+                if (outEdgesSet == null)
+                    throw new IllegalStateException("node in inverse graph has null outEdgesSet: " + out);
+                outEdgesSet.add(node2);
             }
         }
         return inverse;
