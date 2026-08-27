@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import jmaurice.dnd.stats.builder.StandardStatsBuilder;
 import jmaurice.dnd.stats.impl.Stats;
 import jmaurice.dnd.stats.impl.StatsExecutor;
+import jmaurice.dnd.stats.impl.Value;
 import jmaurice.dnd.stats.impl.ValuedStat;
 
 public class Main {
@@ -55,10 +56,15 @@ public class Main {
                         .collect(Collectors.toMap(name -> name, name -> new ValuedStat(stats.getStat(name))));
                 ParseCreatureInput.parseApply(valuedStats, input);
                 StatsExecutor.execute(stats, valuedStats);
+                for (final ValuedStat stat : valuedStats.values()) {
+                    if (stat.getValues().contains(null)) {
+                        throw new RuntimeException("Stat " + stat.name() + " contains a null Value");
+                    }
+                }
                 final String creatureOutput = new TreeSet<>(valuedStats.keySet()).stream()
                         .map(statName -> valuedStats.get(statName))
                         .filter(stat -> stat.getValues().size() > 0)
-                        .flatMap(stat -> stat.getValues().stream().map(v -> stat.name() + "=" + v.value))
+                        .flatMap(stat -> stat.getValues().stream().map(v -> stat.name() + "=" + serialize(v)))
                         .collect(Collectors.joining(";;"));
                 outputFileContent.append(creatureName);
                 outputFileContent.append("\t");
@@ -79,6 +85,12 @@ public class Main {
             fout.write(outputFileContent.toString());
             fout.flush();
         }
+    }
+
+    private static Object serialize(final Value value) {
+        if (value.source != null && ! value.source.isBlank())
+            return value.value + " (" + value.source + ")";
+        return value.value.toString();
     }
 
     private static String getUsefulMessage(Throwable e) {
