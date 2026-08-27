@@ -2,6 +2,8 @@ package jmaurice.dnd.stats.builder.raw.basic;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import jmaurice.dnd.stats.builder.BaseBuilder;
 import jmaurice.dnd.stats.impl.Stats;
@@ -13,7 +15,10 @@ public class AbilityScores extends BaseBuilder {
     public void build() {
         final List<String> abilityScoreNames = Arrays.asList("strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma");
         abilityScoreNames.forEach(n -> agg(n, rootleaf, values -> {
-            if (values.stream().map(x -> x.getStringValue()).filter(x -> x.equals("-")).findAny().isPresent())
+            final Set<String> values2 = values.stream().map(x -> x.getStringValue()).collect(Collectors.toSet());
+            if (values2.contains("-"))
+                return null;
+            if (values2.contains("none"))
                 return null;
             return sumAsInts(values);
         }));
