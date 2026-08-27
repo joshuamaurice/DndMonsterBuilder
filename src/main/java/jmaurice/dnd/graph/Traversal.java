@@ -20,11 +20,22 @@ public class Traversal {
         final Map<Node, Integer> remaining = new ConcurrentHashMap<>();
         inverse.forEach((node, edges) -> remaining.put(node, edges.size()));
         final Semaphore completion = new Semaphore(0);
-        final AtomicInteger count = new AtomicInteger(inverse.leafs().size());
+        
+        //We need to increment the count one extra time here,
+        //and decrement it after the initial loop in this method,
+        //to avoid a really nasty race condition.
+        //Consider: If the first root has no out-nodes,
+        //then that task might start and finish before the other tasks can even be registered in this method,
+        //which will lead to the count being decremented for the first task
+        //before we get to the increment of the second task.
+        final AtomicInteger count = new AtomicInteger(1);
+        
         final List<RuntimeException> errors = new CopyOnWriteArrayList<>();
         for (final Node root : inverse.leafs()) {
+            count.incrementAndGet();
             executor.execute(() -> ordered2(graph, action, executor, root, remaining, completion, count, errors));
         }
+        count.decrementAndGet();
         if (0 == count.get()) {
             completion.release();
         }
