@@ -69,6 +69,10 @@ public class BaseBuilder {
     protected static final RootLeafOption root = new RootLeafOption();
     protected static final RootLeafOption leaf = new RootLeafOption();
     
+    protected void to1(String outputStatName, Value value) {
+        to1(outputStatName, "default", null, value);
+    }
+    
     /** the rule will not be called when the input is empty aka zero-values */
     protected void to1(String outputStatName, String inputStatName) {
         to1(outputStatName, inputStatName, null, value -> value);
@@ -99,7 +103,7 @@ public class BaseBuilder {
             if (outputValue == null)
                 return Collections.emptyList();
             if (outputValue.source == null)
-                outputValue = outputValue.source(inputValue.get().source);
+                outputValue = outputValue.source(inputStatName);
             return Collections.singletonList(outputValue);
         };
         stats.input(outputStatName, Collections.singletonList(inputStatName), rule2);
@@ -162,7 +166,10 @@ public class BaseBuilder {
                 return null;
             if (values.isEmpty())
                 return values;
-            return Collections.singletonList(rule.apply(values));
+            final Value agg = rule.apply(values);
+            if (agg == null)
+                return Collections.emptyList();
+            return Collections.singletonList(agg);
         };
         stats.agg(statName, rule2);
         if (rootLeafOption == root || rootLeafOption == rootleaf)
