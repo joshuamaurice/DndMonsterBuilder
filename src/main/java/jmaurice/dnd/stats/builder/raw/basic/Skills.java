@@ -59,8 +59,14 @@ public class Skills extends BaseBuilder {
         
         allSkills.forEach(skill -> agg(skill + " class skill", root, input -> new Value(3, first(input).source))); //TODO remove root
         allSkills.forEach(skill -> agg(skill + " ranks", root, input -> sumAsInts(input)));
-        //TODO max ranks
         allSkills.forEach(skill -> agg(skill, input -> sumAsInts(input)));
+        
+        allSkills.forEach(skill -> agg("max " + skill + " ranks", root));
+        allSkills.forEach(skill -> stats.input(skill + " ranks", Arrays.asList("max " + skill + " ranks", "num hit dice"), stats -> {
+            if (stats.get("max " + skill + " ranks").getValues().size() > 0)
+                return Collections.singletonList(new Value(stats.get("num hit dice").val1().getIntValue()));
+            return null;
+        }));
         
         allSkills.forEach(skill -> to1(skill, skill + " ranks",       input -> input.asInt().source("ranks")));
         allSkills.forEach(skill -> to1(skill, skill + " class skill", input -> new Value(3, input.source + " class skill")));
