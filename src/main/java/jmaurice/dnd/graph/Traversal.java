@@ -20,10 +20,9 @@ public class Traversal {
         final Map<Node, Integer> remaining = new ConcurrentHashMap<>();
         inverse.forEach((node, edges) -> remaining.put(node, edges.size()));
         final Semaphore completion = new Semaphore(0);
-        final AtomicInteger count = new AtomicInteger();
+        final AtomicInteger count = new AtomicInteger(inverse.leafs().size());
         final List<RuntimeException> errors = new CopyOnWriteArrayList<>();
         for (final Node root : inverse.leafs()) {
-            count.incrementAndGet();
             executor.execute(() -> ordered2(graph, action, executor, root, remaining, completion, count, errors));
         }
         if (0 == count.get()) {
@@ -50,22 +49,27 @@ public class Traversal {
             final List<RuntimeException> errors
             ) {
         try {
-            action.accept(node);
-        } catch (Exception e) {
-            errors.add(new RuntimeException("Error on node " + node + ". Error: " + e.getMessage(), e));
-            completion.release();
-            return;
-        }
-        if ( ! errors.isEmpty())
-            return;
-        for (final Node nextNode : graph.edges(node)) {
-            if (0 == remaining.compute(nextNode, (k,v) -> --v)) {
-                count.incrementAndGet();
-                executor.execute(() -> ordered2(graph, action, executor, nextNode, remaining, completion, count, errors));
+            try {
+                action.accept(node);
+            } catch (Exception e) {
+                errors.add(new RuntimeException("Error on node " + node + ". Error: " + e.getMessage(), e));
             }
-        }
-        if (0 == count.decrementAndGet()) {
-            completion.release();
+            if ( ! errors.isEmpty())
+                return;
+            for (final Node nextNode : graph.edges(node)) {
+                if (0 == remaining.compute(nextNode, (k,v) -> --v)) {
+                    count.incrementAndGet();
+                    executor.execute(() -> ordered2(graph, action, executor, nextNode, remaining, completion, count, errors));
+                }
+            }
+        } catch (Exception e) {
+//            e.printStackTrace();
+            new RuntimeException("Error while running node: " + node, e).printStackTrace();
+        } finally {
+            final int c = count.decrementAndGet();
+            if (c == 0) {
+                completion.release();
+            }
         }
     }
 
