@@ -71,16 +71,26 @@ public class BaseBuilder {
     
     /** the rule will not be called when the input is empty aka zero-values */
     protected void to1(String outputStatName, String inputStatName) {
-        to1(outputStatName, inputStatName, value -> value);
+        to1(outputStatName, inputStatName, null, value -> value);
     }
     
     /** the rule will not be called when the input is empty aka zero-values */
     protected void to1(String outputStatName, String inputStatName, Value value) {
-        to1(outputStatName, inputStatName, inputValue -> value);
+        to1(outputStatName, inputStatName, null, inputValue -> value);
+    }
+    
+    /** the rule will not be called when the input is empty aka zero-values */
+    protected void to1(String outputStatName, String inputStatName, RootLeafOption rootLeafOption, Value value) {
+        to1(outputStatName, inputStatName, rootLeafOption, inputValue -> value);
     }
     
     /** the rule will not be called when the input is empty aka zero-values */
     protected void to1(String outputStatName, String inputStatName, Function<Value, Value> rule) {
+        to1(outputStatName, inputStatName, null, rule);
+    }
+    
+    /** the rule will not be called when the input is empty aka zero-values */
+    protected void to1(String outputStatName, String inputStatName, RootLeafOption rootLeafOption, Function<Value, Value> rule) {
         final Function<Map<String, ReadOnlyValuedStat>, List<Value>> rule2 = stats -> {
             Optional<Value> inputValue = stats.get(inputStatName).val01();
             if (inputValue.isEmpty())
@@ -93,10 +103,19 @@ public class BaseBuilder {
             return Collections.singletonList(outputValue);
         };
         stats.input(outputStatName, Collections.singletonList(inputStatName), rule2);
+        if (rootLeafOption == root || rootLeafOption == rootleaf)
+            stats.getStat(inputStatName).setRoot(true);
+        if (rootLeafOption == leaf || rootLeafOption == rootleaf)
+            stats.getStat(inputStatName).setLeaf(true);
     }
     
     /** the rule will not be called when the input is empty aka zero-values */
     protected void toN(String outputStatName, String inputStatName, Function<List<Value>, List<Value>> rule) {
+        toN(outputStatName, inputStatName, null, rule);
+    }
+    
+    /** the rule will not be called when the input is empty aka zero-values */
+    protected void toN(String outputStatName, String inputStatName, RootLeafOption rootLeafOption, Function<List<Value>, List<Value>> rule) {
         final Function<Map<String, ReadOnlyValuedStat>, List<Value>> rule2 = stats -> {
             List<Value> inputValues = stats.get(inputStatName).getValues();
             if (inputValues.isEmpty())
@@ -107,6 +126,10 @@ public class BaseBuilder {
             return outputValues;
         };
         stats.input(outputStatName, Collections.singletonList(inputStatName), rule2);
+        if (rootLeafOption == root || rootLeafOption == rootleaf)
+            stats.getStat(inputStatName).setRoot(true);
+        if (rootLeafOption == leaf || rootLeafOption == rootleaf)
+            stats.getStat(inputStatName).setLeaf(true);
     }
     
     /** the rule will always be called; there is no implicit short-circuiting when some or all of the input is empty */
