@@ -134,6 +134,11 @@ public class StatsExecutor {
             @Override public Optional<Value> val01() { return stat.val01(); }
             @Override public Value val1() { return stat.val1(); }
             @Override public String toString() { return "readOnlyStat(" + stat.stat.name + "=" + stat.getValues() + ")"; }
+            @Override public Boolean getBooleanValue() { return stat.getBooleanValue(); }
+            @Override public boolean getBooleanValue(boolean defaultValue) { return stat.getBooleanValue(defaultValue); }
+            @Override public Double getDoubleValue() { return stat.getDoubleValue(); }
+            @Override public Integer getIntValue() { return stat.getIntValue(); }
+            @Override public String getStringValue() { return stat.getStringValue(); }
         };
     }
     

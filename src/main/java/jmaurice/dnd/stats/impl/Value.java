@@ -72,20 +72,34 @@ public class Value {
         return value + " (" + source + ")";
     }
     
+    public boolean getBooleanValue() {
+        if (value instanceof Boolean value2)
+            return value2;
+        if (value instanceof Number)
+            return true;
+        if (value instanceof String)
+            return true;
+        throw new IllegalStateException("cannot convert " + value.getClass().getName() + " to boolean");
+    }
+    
     public double getDoubleValue() {
-        if (value instanceof String value2)
-            return Double.parseDouble(value2);
+        if (value instanceof Boolean value2)
+            return value2 ? 1.0 : 0.0;
         if (value instanceof Number value2)
             return value2.doubleValue();
-        throw new IllegalStateException("cannot convert " + value.getClass().getName() + " to double; requires String or Number");
+        if (value instanceof String value2)
+            return Double.parseDouble(value2);
+        throw new IllegalStateException("cannot convert " + value.getClass().getName() + " to double");
     }
     
     public int getIntValue() {
-        if (value instanceof String value2)
-            return Integer.parseInt(value2);
+        if (value instanceof Boolean value2)
+            return value2 ? 1 : 0;
         if (value instanceof Number value2)
             return value2.intValue();
-        throw new IllegalStateException("cannot convert " + value.getClass().getName() + " to int; requires String or Number");
+        if (value instanceof String value2)
+            return Integer.parseInt(value2);
+        throw new IllegalStateException("cannot convert " + value.getClass().getName() + " to int");
     }
     
     public String getStringValue() {

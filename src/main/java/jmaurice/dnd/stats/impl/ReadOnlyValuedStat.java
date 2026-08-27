@@ -8,4 +8,9 @@ public interface ReadOnlyValuedStat {
     List<Value> getValues();
     Optional<Value> val01();
     Value val1();
+    Boolean getBooleanValue();
+    boolean getBooleanValue(boolean defaultValue);
+    Double getDoubleValue();
+    Integer getIntValue();
+    String getStringValue();
 }
