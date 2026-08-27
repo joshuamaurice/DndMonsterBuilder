@@ -1,4 +1,4 @@
-package jmaurice.dnd.stats.builder.homebrew;
+package jmaurice.dnd.stats.builder.homebrew.tyranids;
 
 import java.util.Arrays;
 

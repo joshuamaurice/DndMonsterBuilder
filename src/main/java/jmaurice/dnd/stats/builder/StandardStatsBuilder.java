@@ -1,6 +1,6 @@
 package jmaurice.dnd.stats.builder;
 
-import jmaurice.dnd.stats.builder.homebrew.Tyranids;
+import jmaurice.dnd.stats.builder.homebrew.tyranids.Tyranids;
 import jmaurice.dnd.stats.builder.raw.basic.AbilityScores;
 import jmaurice.dnd.stats.builder.raw.basic.ArmorClass;
 import jmaurice.dnd.stats.builder.raw.basic.AttackRoutine;

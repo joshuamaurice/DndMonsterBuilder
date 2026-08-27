@@ -1,9 +1,10 @@
-package jmaurice.dnd.stats.builder.homebrew;
+package jmaurice.dnd.stats.builder.homebrew.tyranids;
 
 import java.util.Arrays;
 import java.util.Collections;
 
 import jmaurice.dnd.stats.builder.BaseBuilder;
+import jmaurice.dnd.stats.builder.homebrew.tyranids.weapons.TyranidAfflictionWeapons;
 import jmaurice.dnd.stats.impl.Stats;
 import jmaurice.dnd.stats.impl.Value;
 
@@ -24,8 +25,9 @@ public class Tyranids extends BaseBuilder {
             final int intelligenceModifier = stats.get("intelligence modifier").getIntValue();
             return Collections.singletonList(new Value(10 + intelligenceModifier + (psionicManifesterLevel + 1) / 2));
         });
+        new TyranidAbilityScores(stats).build();
         new TyranidAfflictionWeapons(stats).build();
         new TyranidUpgrades(stats).build();
     }
-        
+    
 }
