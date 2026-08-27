@@ -50,11 +50,11 @@ public class Skills extends BaseBuilder {
         
         aggN("trained skills", leaf, values -> sort(values));
         allSkills.forEach(skill -> stats.input("trained skills", Arrays.asList(skill, skill + " ranks"), stats -> {
+            final Integer skillRanks = stats.get(skill + " ranks").getIntValue();
+            if (skillRanks == null)
+                return null;
             final Value skillMod = stats.get(skill).val1();
-            final Integer skillRanks = stats.get(skill + " ranks").val01().map(x -> x.getIntValue()).orElse(null);
-            if (skillRanks != null)
-                return Collections.singletonList(new Value(skill + " " + withSign(skillMod.getIntValue()), skillMod.source));
-            return null;
+            return Collections.singletonList(new Value(skill + " " + withSign(skillMod.getIntValue()), skillMod.source));
         }));
         
         allSkills.forEach(skill -> agg(skill + " class skill", root, input -> new Value(3, first(input).source))); //TODO remove root

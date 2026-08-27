@@ -79,8 +79,10 @@ public class SizeSpaceReach extends BaseBuilder {
         agg("reach", leaf);
         agg("short creature reach", root);
         input("reach", Arrays.asList("size", "short creature reach"), stats -> {
-            final String size = stats.get("size").val1().getStringValue();
-            final boolean shortCreatureReach = stats.get("short creature reach").val01().map(x -> true).orElse(false);
+            final String size = stats.get("size").getStringValue();
+            if (size == null)
+                return null;
+            final boolean shortCreatureReach = stats.get("short creature reach").getBooleanValue(false);
             final String reach = switch (size) {
                 case "fine"       -> "0";
                 case "diminutive" -> "0";

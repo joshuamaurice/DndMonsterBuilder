@@ -23,8 +23,8 @@ public class Speeds extends BaseBuilder {
         );
         agg("fly maneuverability", root);
         input("speeds", Arrays.asList("ft fly speed", "fly maneuverability"), stats -> {
-            final Integer fly = stats.get("ft fly speed").val01().map(x -> x.getIntValue()).orElse(null);
-            final String maneuverability = stats.get("fly maneuverability").val01().map(x -> x.getStringValue()).orElse(null);
+            final Integer fly = stats.get("ft fly speed").getIntValue();
+            final String maneuverability = stats.get("fly maneuverability").getStringValue();
             if (fly == null && maneuverability == null)
                 return null;
             if (fly == null)
@@ -42,9 +42,9 @@ public class Speeds extends BaseBuilder {
                     Arrays.asList("ft " + type + " speed"), 
                     Arrays.asList("ft enhance " + type + " speed"),
                     (writableStats, readOnlyStats) -> {
-                        final Integer enhanceType = readOnlyStats.get("ft enhance " + type + " speed").val01().map(x -> x.getIntValue()).orElse(null);
+                        final Integer enhanceType = readOnlyStats.get("ft enhance " + type + " speed").getIntValue();
                         final ValuedStat typeSpeedStat = writableStats.get("ft " + type + " speed");
-                        Integer typeSpeed = typeSpeedStat.val01().map(x -> x.getIntValue()).orElse(null);
+                        Integer typeSpeed = typeSpeedStat.getIntValue();
                         if (typeSpeed != null && enhanceType != null) {
                             typeSpeedStat.getValues().clear();
                             typeSpeedStat.getValues().add(new Value(typeSpeed + enhanceType));

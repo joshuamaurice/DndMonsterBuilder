@@ -164,18 +164,18 @@ public class AttackRoutine extends BaseBuilder {
                 final ValuedStat attackRoutineStat = stats.get("weapon " + weaponId + " attack routine");
                 final ValuedStat attackModifiersStat = stats.get("weapon " + weaponId + " attack modifiers"); //for debuggability
                 final ValuedStat damageModifiersStat = stats.get("weapon " + weaponId + " damage modifiers"); //for debuggability
-                final Integer strengthModifier = readOnlyStats.get("strength modifier").val01().map(x -> x.getIntValue()).orElse(null);
-                final Integer dexterityModifier = readOnlyStats.get("dexterity modifier").val01().map(x -> x.getIntValue()).orElse(null);
-                final boolean globalFinesseDexToDamage = readOnlyStats.get("finesse dex to damage").val01().map(x -> true).orElse(false);
-                final int baseAttackBonus = readOnlyStats.get("base attack bonus").val1().getIntValue();
-                final Integer epicBaseAttackBonus = readOnlyStats.get("epic base attack bonus").val01().map(x -> x.getIntValue()).orElse(null);
-                final int sizeModifierToAttack = readOnlyStats.get("size modifier to attack").val1().getIntValue();
-                final String size = readOnlyStats.get("size").val1().getStringValue();
-                final boolean incorporeal = readOnlyStats.get("incorporeal").val01().map(x -> true).orElse(false);
-                final boolean weaponFinesse = readOnlyStats.get("weapon finesse").val01().map(x -> true).orElse(false);
-                final boolean multiattack = readOnlyStats.get("multiattack").val01().map(x -> true).orElse(false);
-                final boolean usingUnarmedStrikes = readOnlyStats.get("using unarmed strikes").val01().map(x -> true).orElse(false);
-                final boolean usingManufacturedWeapons = readOnlyStats.get("using manufactured weapons").val01().map(x -> true).orElse(false);
+                final Integer strengthModifier = readOnlyStats.get("strength modifier").getIntValue();
+                final Integer dexterityModifier = readOnlyStats.get("dexterity modifier").getIntValue();
+                final boolean globalFinesseDexToDamage = readOnlyStats.get("finesse dex to damage").getBooleanValue(false);
+                final Integer baseAttackBonus = readOnlyStats.get("base attack bonus").getIntValue();
+                final Integer epicBaseAttackBonus = readOnlyStats.get("epic base attack bonus").getIntValue();
+                final Integer sizeModifierToAttack = readOnlyStats.get("size modifier to attack").getIntValue();
+                final String size = readOnlyStats.get("size").getStringValue();
+                final boolean incorporeal = readOnlyStats.get("incorporeal").getBooleanValue(false);
+                final boolean weaponFinesse = readOnlyStats.get("weapon finesse").getBooleanValue(false);
+                final boolean multiattack = readOnlyStats.get("multiattack").getBooleanValue(false);
+                final boolean usingUnarmedStrikes = readOnlyStats.get("using unarmed strikes").getBooleanValue(false);
+                final boolean usingManufacturedWeapons = readOnlyStats.get("using manufactured weapons").getBooleanValue(false);
                 if (attackModifiersStat.getValues().size() > 0)
                     throw new RuntimeException(attackModifiersStat.name() + " stat should not be populated");
                 if (damageModifiersStat.getValues().size() > 0)
@@ -220,26 +220,33 @@ public class AttackRoutine extends BaseBuilder {
                 
                 //
                 
-                final int sizeRating = switch (size) {
-                    case "fine"       -> 1;
-                    case "diminutive" -> 2;
-                    case "tiny"       -> 3;
-                    case "small"      -> 4;
-                    case "medium"     -> 5;
-                    case "large"      -> 6;
-                    case "huge"       -> 7;
-                    case "gargantuan" -> 8;
-                    case "colossal"   -> 9;
-                    default -> throw new RuntimeException("unrecognized size value >>" + size + "<<");
-                };
+                final Integer sizeRating;
+                if (size == null) {
+                    sizeRating = null;
+                } else {
+                    sizeRating = switch (size) {
+                        case "fine"       -> 1;
+                        case "diminutive" -> 2;
+                        case "tiny"       -> 3;
+                        case "small"      -> 4;
+                        case "medium"     -> 5;
+                        case "large"      -> 6;
+                        case "huge"       -> 7;
+                        case "gargantuan" -> 8;
+                        case "colossal"   -> 9;
+                        default -> throw new RuntimeException("unrecognized size value >>" + size + "<<");
+                    };
+                }
     
                 //
                 
                 List<Value> attackModifiers = new ArrayList<>();
-                attackModifiers.add(new Value(baseAttackBonus, "base attack bonus"));
+                if (baseAttackBonus != null)
+                    attackModifiers.add(new Value(baseAttackBonus, "base attack bonus"));
                 if (epicBaseAttackBonus != null)
                     attackModifiers.add(new Value(epicBaseAttackBonus, "epic base attack bonus"));
-                attackModifiers.add(new Value(sizeModifierToAttack, "size"));
+                if (sizeModifierToAttack != null)
+                    attackModifiers.add(new Value(sizeModifierToAttack, "size"));
                 if (secondaryNatural) {
                     if (multiattack) {
                         attackModifiers.add(new Value(-2, "multiattack secondary natural weapon"));

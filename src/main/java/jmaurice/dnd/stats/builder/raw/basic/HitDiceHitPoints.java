@@ -42,10 +42,10 @@ public class HitDiceHitPoints extends BaseBuilder {
         });
         agg("hit points", leaf, values -> sumAsInts(values));
         input("hit points", Arrays.asList("constitution modifier", "num hit dice"), stats -> {
-            final Integer constitutionModifier = stats.get("constitution modifier").val01().map(x -> x.getIntValue()).orElse(null);
+            final Integer constitutionModifier = stats.get("constitution modifier").getIntValue();
             if (constitutionModifier == null)
                 return null;
-            final int numHitDice = stats.get("num hit dice").val1().getIntValue();
+            final int numHitDice = stats.get("num hit dice").getIntValue();
             return new Value(numHitDice * constitutionModifier, "con");
         });
     }
