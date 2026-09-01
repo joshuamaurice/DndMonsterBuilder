@@ -69,7 +69,9 @@ public class Main {
                 outputFileContent.append(creatureName);
                 outputFileContent.append("\t");
                 outputFileContent.append("\"");
+                outputFileContent.append(";;");
                 outputFileContent.append(creatureOutput.replace("\"", "\"\""));
+                outputFileContent.append(";;");
                 outputFileContent.append("\"");
             } catch (final Exception e) {
                 new RuntimeException("Error running creature " + creatureName, e).printStackTrace();;
