@@ -11,6 +11,7 @@ import jmaurice.dnd.stats.builder.raw.basic.NaturalWeapons;
 import jmaurice.dnd.stats.builder.raw.basic.Saves;
 import jmaurice.dnd.stats.builder.raw.basic.SizeSpaceReach;
 import jmaurice.dnd.stats.builder.raw.basic.Skills;
+import jmaurice.dnd.stats.builder.raw.basic.SpecialAbilities;
 import jmaurice.dnd.stats.builder.raw.basic.Speeds;
 import jmaurice.dnd.stats.builder.raw.creaturetypes.Aberrations;
 import jmaurice.dnd.stats.builder.raw.creaturetypes.Constructs;
@@ -37,6 +38,7 @@ public class StandardStatsBuilder {
         new Saves(stats).build();
         new SizeSpaceReach(stats).build();
         new Skills(stats).build();
+        new SpecialAbilities(stats).build();
         new Speeds(stats).build();
         
         //RAW creature types
