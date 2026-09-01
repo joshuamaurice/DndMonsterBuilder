@@ -10,42 +10,46 @@ import jmaurice.dnd.stats.impl.Stats;
 import jmaurice.dnd.stats.impl.Value;
 
 public class Skills extends BaseBuilder {
-
-    public Skills(final Stats stats) { super(stats); }
-
-    public void build() {
-        final List<String> strSkills = Arrays.asList(
-                "climb", "swim"
-                );
-        final List<String> dexSkills = Arrays.asList(
-                "acrobatics", "disable device", "escape artist", "fly", "ride", "sleight of hand", "stealth"
-                );
-        final List<String> conSkills = Arrays.asList();
-        final List<String> intSkills = Arrays.asList(
-                "appraise", "linguistics", "psycraft", "spellcraft", //TODO craft
-                "knowledge arcana",  "knowledge dungeoneering", "knowledge engineering", "knowledge geography", 
-                "knowledge history", "knowledge local",         "knowledge nature",      "knowledge nobility",
-                "knowledge planes",  "knowledge psionics",      "knowledge tactics"
-                );
-        final List<String> wisSkills = Arrays.asList(
-                "heal", "perception", "sense motive", "survival" //TODO profession
-                );
-        final List<String> chaSkills = Arrays.asList(
-                "bluff", "diplomacy", "disguise", "handle animal", "intimidate", "use magic device" //TODO perform
-                );
-        final List<String> armorCheckPenaltySkills = Arrays.asList(
-                "acrobatics", "climb", "disable device", "escape artist", "fly", "ride", "sleight of hand", "stealth", "swim"
-                );
-        
-        final List<String> allSkills = new ArrayList<>();
+    
+    public static final List<String> strSkills = Arrays.asList(
+            "climb", "swim"
+            );
+    public static final List<String> dexSkills = Arrays.asList(
+            "acrobatics", "disable device", "escape artist", "fly", "ride", "sleight of hand", "stealth"
+            );
+    public static final List<String> conSkills = Arrays.asList();
+    public static final List<String> intSkills = Arrays.asList(
+            "appraise", "linguistics", "psycraft", "spellcraft", //TODO craft
+            "knowledge arcana",  "knowledge dungeoneering", "knowledge engineering", "knowledge geography", 
+            "knowledge history", "knowledge local",         "knowledge nature",      "knowledge nobility",
+            "knowledge planes",  "knowledge religion",      "knowledge psionics",    "knowledge tactics"
+            );
+    public static final List<String> wisSkills = Arrays.asList(
+            "heal", "perception", "sense motive", "survival" //TODO profession
+            );
+    public static final List<String> chaSkills = Arrays.asList(
+            "bluff", "diplomacy", "disguise", "handle animal", "intimidate", "use magic device" //TODO perform
+            );
+    public static final List<String> armorCheckPenaltySkills = Arrays.asList(
+            "acrobatics", "climb", "disable device", "escape artist", "fly", "ride", "sleight of hand", "stealth", "swim"
+            );
+    
+    public static final List<String> allSkills = new ArrayList<>();
+    static {
         allSkills.addAll(strSkills);
         allSkills.addAll(dexSkills);
         allSkills.addAll(conSkills);
         allSkills.addAll(intSkills);
         allSkills.addAll(wisSkills);
         allSkills.addAll(chaSkills);
-        
-        aggN("skills", leaf, values -> sort(values));
+    }
+
+    public Skills(final Stats stats) { super(stats); }
+
+    public void build() {
+        aggN("skills", values -> sort(values));
+        toN("skills2", "skills", values -> values);
+        agg("skills2", leaf, values -> join(sort(values), ", "));
         allSkills.forEach(skill -> to1("skills", skill, value -> new Value(skill + " " + withSign(value.getIntValue()), value.source)));
         
         aggN("trained skills", leaf, values -> sort(values));
