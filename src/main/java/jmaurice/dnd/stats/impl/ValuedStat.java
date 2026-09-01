@@ -50,7 +50,7 @@ public class ValuedStat {
     }
     
     public void setValues(List<Value> values) {
-        this.values = values;
+        this.values = Collections.unmodifiableList(values);
     }
     
     public void addInitialValue(Value value) {
