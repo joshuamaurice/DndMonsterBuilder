@@ -45,8 +45,16 @@ public class HitDiceHitPoints extends BaseBuilder {
             final Integer constitutionModifier = stats.get("constitution modifier").getIntValue();
             if (constitutionModifier == null)
                 return null;
-            final int numHitDice = stats.get("num hit dice").getIntValue();
+            final Integer numHitDice = stats.get("num hit dice").getIntValue();
+            if (numHitDice == null)
+                return null;
             return new Value(numHitDice * constitutionModifier, "con");
+        });
+        toN("hit points", "hit dice", value -> {
+            return val01(value).stream()
+                    .flatMap(x -> x.split("\\+").stream())
+                    .map(x -> x.regexExtract("^([0-9]+)d[0-9]+$").mult((x.regexExtract("^[0-9]+d([0-9]+)$").getIntValue() + 1.0) * 0.5))
+                    .toList();
         });
     }
 
