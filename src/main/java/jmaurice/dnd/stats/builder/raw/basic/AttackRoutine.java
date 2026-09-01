@@ -7,6 +7,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import jmaurice.dnd.stats.builder.BaseBuilder;
@@ -37,6 +40,10 @@ public class AttackRoutine extends BaseBuilder {
     private void weaponAttackRoutines() {
         final List<String> weaponIds = IntStream.range(1, 6+1).mapToObj(x -> x + "").toList();
     
+        aggN("global attack modifiers", rootleaf, values -> values);
+        aggN("global melee attack modifiers", rootleaf, values -> values);
+        aggN("global range attack modifiers", rootleaf, values -> values);
+        
         aggN("weapon properties", values -> values);
         agg("attack routine", rootleaf, values -> join(values, ", "));
         aggN("weapon names", rootleaf, values -> values);
@@ -77,9 +84,9 @@ public class AttackRoutine extends BaseBuilder {
                     }
                 }
                 if (namesInValue.size() == 0)
-                    throw new RuntimeException("a weapon properties value is missing a name: " + allWeaponPropertiesValue.getStringValue());
+                    throw new RuntimeException("one or more weapon properties value is missing a name: " + allWeaponPropertiesValue.getStringValue());
                 if (namesInValue.size() >= 2)
-                    throw new RuntimeException("a weapon properties value has two or more names: " + allWeaponPropertiesValue.getStringValue());
+                    throw new RuntimeException("one or more weapon properties value has two or more names: " + allWeaponPropertiesValue.getStringValue());
                 final String nameInValue = namesInValue.get(0);
                 final Map<String, List<String>> existingPropsForName = weapons.computeIfAbsent(nameInValue, k -> new LinkedHashMap<>());
                 propsInValue.forEach((k,v) -> existingPropsForName.computeIfAbsent(k, k2 -> new ArrayList<>()).addAll(v));
@@ -136,11 +143,20 @@ public class AttackRoutine extends BaseBuilder {
         agg("finesse dex to damage", root);
         agg("multiattack", root);
         agg("weapon finesse", root);
+        agg("high melee attack bonus", rootleaf, values -> maxAsInts(values));
+        agg("high range attack bonus", rootleaf, values -> maxAsInts(values));
+        agg("average melee damage", rootleaf, values -> sumAsDoubles(values));
+        agg("average range damage", rootleaf, values -> sumAsDoubles(values));
+
         weaponIds.forEach(weaponId -> {
             final List<String> postStatNames = new ArrayList<>();
             postStatNames.add("weapon " + weaponId + " attack routine");
             postStatNames.add("weapon " + weaponId + " attack modifiers");
             postStatNames.add("weapon " + weaponId + " damage modifiers");
+            postStatNames.add("high melee attack bonus");
+            postStatNames.add("average melee damage");
+            postStatNames.add("high range attack bonus");
+            postStatNames.add("average range damage");
             final List<String> otherInputStatNames = new ArrayList<>();
             otherInputStatNames.add("weapon names");
             otherInputStatNames.add("weapon " + weaponId + " properties");
@@ -156,14 +172,22 @@ public class AttackRoutine extends BaseBuilder {
             otherInputStatNames.add("multiattack");
             otherInputStatNames.add("using unarmed strikes");
             otherInputStatNames.add("using manufactured weapons");
+            otherInputStatNames.add("global attack modifiers");
+            otherInputStatNames.add("global melee attack modifiers");
+            otherInputStatNames.add("global range attack modifiers");
             stats.post("generate weapon " + weaponId + " attack routine", postStatNames, otherInputStatNames, (stats, readOnlyStats) -> {
                 final List<Value> propsList = readOnlyStats.get("weapon " + weaponId + " properties").getValues();
                 if (propsList.isEmpty())
                     return;
                 final List<String> weaponNames = readOnlyStats.get("weapon names").getValues().stream().map(x -> x.getStringValue()).toList();
+                final String weaponName = weaponNames.get(Integer.parseInt(weaponId) - 1);
                 final ValuedStat attackRoutineStat = stats.get("weapon " + weaponId + " attack routine");
                 final ValuedStat attackModifiersStat = stats.get("weapon " + weaponId + " attack modifiers"); //for debuggability
                 final ValuedStat damageModifiersStat = stats.get("weapon " + weaponId + " damage modifiers"); //for debuggability
+                final ValuedStat highMeleeAttackBonus = stats.get("high melee attack bonus"); //for later comparison
+                final ValuedStat highRangeAttackBonus = stats.get("high range attack bonus"); //for later comparison
+                final ValuedStat averageMeleeDamage = stats.get("average melee damage"); //for later comparison
+                final ValuedStat averageRangeDamage = stats.get("average range damage"); //for later comparison
                 final Integer strengthModifier = readOnlyStats.get("strength modifier").getIntValue();
                 final Integer dexterityModifier = readOnlyStats.get("dexterity modifier").getIntValue();
                 final boolean globalFinesseDexToDamage = readOnlyStats.get("finesse dex to damage").getBooleanValue(false);
@@ -176,6 +200,9 @@ public class AttackRoutine extends BaseBuilder {
                 final boolean multiattack = readOnlyStats.get("multiattack").getBooleanValue(false);
                 final boolean usingUnarmedStrikes = readOnlyStats.get("using unarmed strikes").getBooleanValue(false);
                 final boolean usingManufacturedWeapons = readOnlyStats.get("using manufactured weapons").getBooleanValue(false);
+                final List<Value> globalAttackModifiers = readOnlyStats.get("global attack modifiers").getValues();
+                final List<Value> globalMeleeAttackModifiers = readOnlyStats.get("global melee attack modifiers").getValues();
+                final List<Value> globalRangeAttackModifiers = readOnlyStats.get("global range attack modifiers").getValues();
                 if (attackModifiersStat.getValues().size() > 0)
                     throw new RuntimeException(attackModifiersStat.name() + " stat should not be populated");
                 if (damageModifiersStat.getValues().size() > 0)
@@ -199,6 +226,7 @@ public class AttackRoutine extends BaseBuilder {
                         .map(x -> sumInts(x.stream().map(y -> Integer.parseInt(y)).toList()))
                         .orElse(0);
                 final boolean noStrengthToDamage = props.remove("no strength to damage") != null;
+                final boolean halfStrengthToDamage = props.remove("half strength to damage") != null;
                 final boolean finessable = props.remove("finessable") != null;
                 final boolean weaponFinesseDexToDamage = props.remove("finesse dex to damage") != null;
                 final boolean light = props.remove("light") != null;
@@ -211,6 +239,12 @@ public class AttackRoutine extends BaseBuilder {
                 final boolean secondaryNatural = secondaryNaturalOverride || (natural && (usingUnarmedStrikes || usingManufacturedWeapons));
                 final boolean inTwoHands = props.remove("in two hands") != null;
                 final boolean inOffHand = props.remove("in off-hand") != null;
+                final Integer criticalThreatRange = val01(props.remove("critical threat range")).map(x -> Integer.parseInt(x)).orElse(null);
+                final Integer criticalThreatMultiplier = val01(props.remove("critical threat multiplier")).map(x -> Integer.parseInt(x)).orElse(null);
+                final boolean weaponImprovedCritical = props.remove("improved critical") != null;
+                final List<String> additionalEffects = props.remove("additional effect");
+                final List<String> weaponMiscAttackModifiers = props.remove("attack modifier");
+                final List<String> weaponMiscDamageModifiers = props.remove("damage modifier");
                 if ( ! props.isEmpty())
                     throw new RuntimeException("unrecognized weapon properties: " + props.keySet());
                 if (melee && ((light ? 1 : 0) + (oneHanded ? 1 : 0) + (twoHanded ? 1 : 0) + (unarmed ? 1 : 0) + (natural ? 1 : 0) == 0))
@@ -271,7 +305,21 @@ public class AttackRoutine extends BaseBuilder {
                 } else if (melee) {
                     attackModifiers.add(new Value(strengthModifier, "default melee strength"));
                 } else {
-                    throw new RuntimeException("don't know what ability score modifier to use for attack");
+                    throw new RuntimeException("don't know what ability score modifier to use for attack for weapon: " + weaponName);
+                }
+                if (weaponMiscAttackModifiers != null) {
+                    for (final String x : weaponMiscAttackModifiers) {
+                        attackModifiers.add(new Value(Integer.parseInt(x)));
+                    }
+                }
+                if (globalAttackModifiers != null) {
+                    attackModifiers.addAll(globalAttackModifiers);
+                }
+                if (globalMeleeAttackModifiers != null && melee) {
+                    attackModifiers.addAll(globalMeleeAttackModifiers);
+                }
+                if (globalRangeAttackModifiers != null && range) {
+                    attackModifiers.addAll(globalRangeAttackModifiers);
                 }
                 attackModifiersStat.setValues(attackModifiers);
                 
@@ -307,8 +355,11 @@ public class AttackRoutine extends BaseBuilder {
                 
                 List<Value> damageModifiers = new ArrayList<>();
                 Value strToDamage = null;
-                if (noStrengthToDamage == false && strengthModifier != null) {
-                    if (melee) {
+                if (strengthModifier != null) {
+                    if (noStrengthToDamage) {
+                    } else if (halfStrengthToDamage) {
+                        strToDamage = new Value(strengthModifier / 2, "half strength");
+                    } else if (melee) {
                         if (natural && weaponNames.size() == 1 && numWeaponsOfSameName == 1 && numAttacksMultiplier == 1) {
                             strToDamage = new Value(strengthModifier + strengthModifier / 2, "single natural weapon strength and a half");
                         } else if (secondaryNatural) {
@@ -341,6 +392,11 @@ public class AttackRoutine extends BaseBuilder {
                 } else if (strToDamage != null) {
                     damageModifiers.add(strToDamage);
                 }
+                if (weaponMiscDamageModifiers != null) {
+                    for (final String weaponMiscDamageModifier : weaponMiscDamageModifiers) {
+                        damageModifiers.add(new Value(Integer.parseInt(weaponMiscDamageModifier)));
+                    }
+                }
                 damageModifiersStat.setValues(damageModifiers);
                 
                 //
@@ -351,28 +407,88 @@ public class AttackRoutine extends BaseBuilder {
                 final boolean iterative10 = ! natural && baseAttackBonus >= 11 && ( ! inOffHand);
                 final boolean iterative15 = ! natural && baseAttackBonus >= 16 && ( ! inOffHand);
                 
+                int numAttacks = 0;
                 final StringBuilder attackRoutine = new StringBuilder();
                 if (numWeaponsOfSameName != 1 && ! iterative5) {
                     attackRoutine.append(numWeaponsOfSameName);
                     attackRoutine.append(" ");
+                    attackRoutine.append(name);
+                    attackRoutine.append(" ");
+                    attackRoutine.append(withSign(attackModifier));
+                    numAttacks = numWeaponsOfSameName;
+                } else {
+                    attackRoutine.append(name);
+                    if (rangeIncrement != null)
+                        attackRoutine.append(" (").append(rangeIncrement).append(" ft incr)");
+                    attackRoutine.append(" ");
+                    attackRoutine.append(withSign(attackModifier));
+                    numAttacks++;
+                    for (int i = 2; i <= numWeaponsOfSameName; ++i) {
+                        attackRoutine.append("/").append(withSign(attackModifier));
+                        numAttacks++;
+                    }
+                    if (iterative5) {
+                        attackRoutine.append("/").append(withSign(attackModifier - 5));
+                        numAttacks++;
+                    }
+                    if (iterative10) {
+                        attackRoutine.append("/").append(withSign(attackModifier - 10));
+                        numAttacks++;
+                    }
+                    if (iterative15) {
+                        attackRoutine.append("/").append(withSign(attackModifier - 15));
+                        numAttacks++;
+                    }
                 }
-                attackRoutine.append(name);
-                if (rangeIncrement != null)
-                    attackRoutine.append(" (").append(rangeIncrement).append(" ft incr)");
-                attackRoutine.append(" ");
-                attackRoutine.append(withSign(attackModifier));
-                if (iterative5)
-                    attackRoutine.append("/").append(withSign(attackModifier - 5));
-                if (iterative10)
-                    attackRoutine.append("/").append(withSign(attackModifier - 10));
-                if (iterative15)
-                    attackRoutine.append("/").append(withSign(attackModifier - 15));
                 attackRoutine.append(" (");
                 attackRoutine.append(baseDamage);
                 if (damageModifier != 0)
                     attackRoutine.append(withSign(damageModifier));
+                if (weaponImprovedCritical) {
+                    if (criticalThreatRange == null || criticalThreatRange == 20) {
+                        attackRoutine.append("/19-20");
+                    } else {
+                        attackRoutine.append("/" + (((criticalThreatRange - 21) * 2) + 21) + "-20");
+                    }
+                } else if (criticalThreatRange != null && criticalThreatRange != 20) {
+                    attackRoutine.append("/" + criticalThreatRange + "-20");
+                }
+                if (criticalThreatMultiplier != null && criticalThreatMultiplier != 2)
+                    attackRoutine.append("/×" + criticalThreatMultiplier);
+                if (additionalEffects != null)
+                    attackRoutine.append(" plus " + additionalEffects.stream().collect(Collectors.joining(" and ")));
                 attackRoutine.append(")");
                 attackRoutineStat.setValues(Collections.singletonList(new Value(attackRoutine.toString())));
+                
+                //
+                final ValuedStat averageDamageStat;
+                if (melee)
+                    averageDamageStat = averageMeleeDamage;
+                else if (range)
+                    averageDamageStat = averageRangeDamage;
+                else
+                    throw new RuntimeException();
+                final Matcher baseDamageMatcher = Pattern.compile("^([0-9]+)(?:d([0-9]+))?$").matcher(baseDamage);
+                if ( ! baseDamageMatcher.matches())
+                    throw new RuntimeException("invalid baseDamage: " + baseDamage);
+                final int numDamageDice = Integer.parseInt(baseDamageMatcher.group(1));
+                final Integer damageDiceSize = Optional.ofNullable(baseDamageMatcher.group(2)).map(x -> Integer.parseInt(x)).orElse(null);
+                final double averageBaseDamage = damageDiceSize == null ? numDamageDice : numDamageDice * (damageDiceSize + 1) * 0.5;
+                final List<Value> averageDamageValues = new ArrayList<>(averageDamageStat.getValues());
+                averageDamageValues.add(new Value(numAttacks * (averageBaseDamage + damageModifier), weaponName));
+                averageDamageStat.setValues(averageDamageValues);
+                
+                //
+                final ValuedStat highAttackBonusStat;
+                if (melee)
+                    highAttackBonusStat = highMeleeAttackBonus;
+                else if (range)
+                    highAttackBonusStat = highRangeAttackBonus;
+                else
+                    throw new RuntimeException();
+                final List<Value> highAttackBonusValues = new ArrayList<>(highAttackBonusStat.getValues());
+                highAttackBonusValues.add(new Value(attackModifier, weaponName));
+                highAttackBonusStat.setValues(highAttackBonusValues);
             });
         });
             
