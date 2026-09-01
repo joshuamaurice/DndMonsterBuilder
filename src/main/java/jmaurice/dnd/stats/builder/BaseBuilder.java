@@ -75,7 +75,12 @@ public class BaseBuilder {
     
     /** the rule will not be called when the input is empty aka zero-values */
     protected void to1(String outputStatName, String inputStatName) {
-        to1(outputStatName, inputStatName, null, value -> value);
+        to1(outputStatName, inputStatName, null, value -> value.source(inputStatName));
+    }
+    
+    /** the rule will not be called when the input is empty aka zero-values */
+    protected void to1(String outputStatName, String inputStatName, RootLeafOption rootLeafOption) {
+        to1(outputStatName, inputStatName, rootLeafOption, value -> value.source(inputStatName));
     }
     
     /** the rule will not be called when the input is empty aka zero-values */
