@@ -16,10 +16,19 @@ public class Saves extends BaseBuilder {
         final List<String> saves = Arrays.asList("fortitude", "reflex", "will");
         saves.forEach(save -> agg(save, leaf, values -> sumAsInts(values)));
         
-        saves.forEach(save -> agg("base " + save,                 leaf, values -> sumAsDoubles(values).floor())); //sumAsDoubles for partial save bonus multiclassing
-        saves.forEach(save -> to1(          save, "base " + save,       value  -> value.source("base save")));
-        saves.forEach(save -> to1("base " + save, "good " + save,                 new Value(2, "flat +2 for good save")));
-        saves.forEach(save -> agg("good " + save,                 root, values -> new Value(true, first(values).source))); //TODO remove root
+        saves.forEach(save -> agg(save + " base bonus", leaf, values -> sumAsDoubles(values).floor())); 
+        saves.forEach(save -> to1(save, save + " base bonus")); 
+        
+        saves.forEach(save -> agg(save + " good bonus", values -> sumAsDoubles(values))); //sumAsDoubles for partial save bonus multiclassing
+        saves.forEach(save -> agg(save + " good levels", root, values -> sumAsInts(values))); //TODO remove root
+        saves.forEach(save -> to1(save + " good bonus", save + " good levels", value -> value.mult(0.5).source("good saves")));
+        saves.forEach(save -> to1(save + " good bonus", save + " good levels", new Value(2, "flat +2 for any good save levels"))); 
+        saves.forEach(save -> to1(save + " base bonus", save + " good bonus", value -> value.source("good saves")));
+        
+        saves.forEach(save -> agg(save + " bad bonus", values -> sumAsDoubles(values))); //sumAsDoubles for partial save bonus multiclassing
+        saves.forEach(save -> agg(save + " bad levels", root, values -> sumAsInts(values))); //TODO remove root
+        saves.forEach(save -> to1(save + " bad bonus", save + " bad levels", value -> value.mult(0.3334).source("bad saves")));
+        saves.forEach(save -> to1(save + " base bonus", save + " bad bonus", value -> value.source("bad saves")));
         
         to1("fortitude", "constitution modifier");
         to1("reflex", "dexterity modifier");

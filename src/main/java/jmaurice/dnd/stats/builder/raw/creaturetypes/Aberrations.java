@@ -16,10 +16,9 @@ public class Aberrations extends BaseBuilder {
         agg("aberration hit dice", values -> sumAsInts(values));
         to1("hit dice", "aberration hit dice", input -> new Value(input.getIntValue() + "d8", "aberration"));
         to1("base attack bonus", "aberration hit dice", input -> input.mult(0.75).source("aberration"));
-        to1("base fortitude", "aberration hit dice", input -> input.mult(0.3334).source("aberration bad fortitude"));
-        to1("base reflex",    "aberration hit dice", input -> input.mult(0.3334).source("aberration bad reflex"));
-        to1("base will",      "aberration hit dice", input -> input.mult(0.5).source("aberration good will"));
-        to1("good will",      "aberration hit dice", input -> new Value(true, "aberration"));
+        to1("fortitude bad levels", "aberration hit dice");
+        to1("reflex bad levels",    "aberration hit dice");
+        to1("will good levels",     "aberration hit dice");
         
         //aberration creature type
         to1("aberration", "creature type", input -> input.getStringValue().equals("aberration") ? new Value(true) : null);
