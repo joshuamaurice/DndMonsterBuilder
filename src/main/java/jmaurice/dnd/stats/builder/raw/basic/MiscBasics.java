@@ -24,7 +24,7 @@ public class MiscBasics extends BaseBuilder {
         agg("psionic manifester level", values -> sumAsInts(values));
         agg("senses", leaf, values -> join(sort(values), ", "));
         agg("weaknesses", rootleaf, values -> join(sort(values), ", ")); //TODO remove root
-        agg("special abilities long", leaf, values -> join(sort(values), "\n"));
+        agg("special abilities long", leaf, values -> join(sort(values), "__NEWLINE__"));
         agg("special abilities short", rootleaf, values -> join(sort(values), ", ")); //TODO remove root
     }
 
