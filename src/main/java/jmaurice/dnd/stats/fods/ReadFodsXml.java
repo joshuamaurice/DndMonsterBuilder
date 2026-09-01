@@ -93,7 +93,7 @@ public class ReadFodsXml {
                     removeTrailingEmptyCells(cells);
                     int c = 0;
                     for (final Element cell : cells) {
-                        final String sNumberColsRepeated = row.getAttributeNS("urn:oasis:names:tc:opendocument:xmlns:table:1.0", "number-columns-repeated");
+                        final String sNumberColsRepeated = cell.getAttributeNS("urn:oasis:names:tc:opendocument:xmlns:table:1.0", "number-columns-repeated");
                         final int nColsRepeated = sNumberColsRepeated.isEmpty() ? 1: Integer.parseInt(sNumberColsRepeated);
                         if (c >= targetEndCol)
                             break;
