@@ -10,13 +10,11 @@ public class MiscBasics extends BaseBuilder {
 
     public void build() {
         agg("alignment", rootleaf); 
-        agg("best psionic power DC", leaf, values -> maxAsInts(values));
-//        agg("best spell DC", leaf, values -> maxAsInts(values)); //TODO
-//        agg("caster level", values -> sumAsInts(values)); //TODO
         agg("challenge rating", leaf, values -> sumAsInts(values));
         agg("creature subtypes", leaf, values -> join(sort(values), ", "));
         agg("defensive abilities", leaf, values -> join(sort(values), ", "));
         agg("equipment", rootleaf, values -> join(sort(values), ", "));
+        agg("high attack DC", leaf, values -> maxAsInts(values));
         agg("immunities", leaf, values -> join(sort(values), ", "));
         agg("incorporeal", rootleaf, values -> values.size() >= 1 ? new Value(1) : null);
         agg("initiative", leaf, values -> sumAsInts(values));
