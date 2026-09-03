@@ -16,6 +16,10 @@ public class TyranidRangeWeapons extends BaseBuilder {
     public void build() {
         //"no strength to damage"
 
+        //Shoots darts
+        //12 in, atks 2, str 5, AP -1, dmg 1, assault, pistol, 
+        weapon("spinefists", 20, 3, "d4", Arrays.asList("additional effect=does not provoke", "half strength to damage"));
+        
         //Shoots beetles that eat into enemy
         //18 in, atks 1, str 5, AP -1, dmg 1, assault
         weapon("fleshborer", 30, 5, "d6", Arrays.asList("additional effect=borer beetles"));
@@ -41,10 +45,6 @@ public class TyranidRangeWeapons extends BaseBuilder {
         //Shoots superior shrapnel warhead as artillery
         //24 in, atks d6, str 5, AP 0, dmg 1, heavy, blast
         weapon("barblauncher", 40, 5, "d6", Arrays.asList());
-        
-        //Shoots darts
-        //12 in, atks 2, str 5, AP -1, dmg 1, assault, pistol, 
-        weapon("spinefists", 20, 3, "d4", Arrays.asList("additional effect=does not provoke", "half strength to damage"));
         
         //--
         
@@ -77,6 +77,8 @@ public class TyranidRangeWeapons extends BaseBuilder {
         //36 in, atks d3+3, str 8, AP -2, dmg 2, heavy, blast
         weapon("stranglethorn cannon", 60, 25, "d6", Arrays.asList("additional effect=area attack", "additional effect=entangle and anchored"));
         
+        //--
+        
         borerBeetles();
         fleshWorms();
     }
@@ -91,13 +93,7 @@ public class TyranidRangeWeapons extends BaseBuilder {
         agg(weaponName, root, values -> sumAsInts(values));
         
         agg(weaponName + " damage dice", values -> sumAsInts(values));
-        input(weaponName + " damage dice", Arrays.asList(weaponName, "aberration hit dice"), stats -> {
-            final Integer weaponCount = stats.get(weaponName).getIntValue();
-            if (weaponCount == null)
-                return null;
-            final int numHitDice = stats.get("aberration hit dice").val1().getIntValue();
-            return new Value(numDamageDice).floor();
-        });
+        to1(weaponName + " damage dice", weaponName, new Value(numDamageDice));
         
         input("weapon properties", Arrays.asList(weaponName, weaponName + " damage dice"), stats -> {
             final Integer weaponCount = stats.get(weaponName).getIntValue();
