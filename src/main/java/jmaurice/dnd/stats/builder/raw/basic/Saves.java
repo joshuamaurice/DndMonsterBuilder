@@ -15,6 +15,7 @@ public class Saves extends BaseBuilder {
     public void build() {
         final List<String> saves = Arrays.asList("fortitude", "reflex", "will");
         saves.forEach(save -> agg(save, leaf, values -> sumAsInts(values)));
+        saves.forEach(save -> to1(save, "default", new Value(0)));
         
         saves.forEach(save -> agg(save + " base bonus", leaf, values -> sumAsDoubles(values).floor())); 
         saves.forEach(save -> to1(save, save + " base bonus")); 
