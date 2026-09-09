@@ -47,13 +47,11 @@ public class Skills extends BaseBuilder {
     public Skills(final Stats stats) { super(stats); }
 
     public void build() {
-        aggN("skills", values -> sort(values));
-        toN("skills2", "skills", values -> values);
-        agg("skills2", leaf, values -> join(sort(values), ", "));
+        aggN("skills", leaf, values -> sort(values));
         allSkills.forEach(skill -> to1("skills", skill, value -> new Value(skill + " " + withSign(value.getIntValue()), value.source)));
         
-        aggN("trained skills", leaf, values -> sort(values));
-        allSkills.forEach(skill -> stats.input("trained skills", Arrays.asList(skill, skill + " ranks"), stats -> {
+        agg("trained skills2", values -> join(sort(values), ", "));
+        allSkills.forEach(skill -> stats.input("trained skills2", Arrays.asList(skill, skill + " ranks"), stats -> {
             final Integer skillRanks = stats.get(skill + " ranks").getIntValue();
             if (skillRanks == null)
                 return null;
