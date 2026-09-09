@@ -4,6 +4,7 @@ import jmaurice.dnd.stats.builder.homebrew.tyranids.Tyranids;
 import jmaurice.dnd.stats.builder.raw.basic.AbilityScores;
 import jmaurice.dnd.stats.builder.raw.basic.ArmorClass;
 import jmaurice.dnd.stats.builder.raw.basic.AttackRoutine;
+import jmaurice.dnd.stats.builder.raw.basic.DivineRank;
 import jmaurice.dnd.stats.builder.raw.basic.Feats;
 import jmaurice.dnd.stats.builder.raw.basic.HitDiceHitPoints;
 import jmaurice.dnd.stats.builder.raw.basic.MiscBasics;
@@ -13,8 +14,10 @@ import jmaurice.dnd.stats.builder.raw.basic.SizeSpaceReach;
 import jmaurice.dnd.stats.builder.raw.basic.Skills;
 import jmaurice.dnd.stats.builder.raw.basic.SpecialAbilities;
 import jmaurice.dnd.stats.builder.raw.basic.Speeds;
+import jmaurice.dnd.stats.builder.raw.basic.StatBlocks;
 import jmaurice.dnd.stats.builder.raw.creaturetypes.Aberrations;
 import jmaurice.dnd.stats.builder.raw.creaturetypes.Constructs;
+import jmaurice.dnd.stats.builder.raw.creaturetypes.Outsiders;
 import jmaurice.dnd.stats.impl.Stats;
 
 public class StandardStatsBuilder {
@@ -31,6 +34,7 @@ public class StandardStatsBuilder {
         new AbilityScores(stats).build();
         new ArmorClass(stats).build();
         new AttackRoutine(stats).build();
+        new DivineRank(stats).build();
         new Feats(stats).build();
         new HitDiceHitPoints(stats).build();
         new MiscBasics(stats).build();
@@ -40,10 +44,12 @@ public class StandardStatsBuilder {
         new Skills(stats).build();
         new SpecialAbilities(stats).build();
         new Speeds(stats).build();
+        new StatBlocks(stats).build();
         
         //RAW creature types
         new Aberrations(stats).build();
         new Constructs(stats).build();
+        new Outsiders(stats).build();
         
         //homebrew
         new Tyranids(stats).build();
