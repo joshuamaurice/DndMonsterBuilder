@@ -30,7 +30,8 @@ public class AttackRoutine extends BaseBuilder {
     private void combatManeuversBonus() {
         agg("base attack bonus", rootleaf, values -> sumAsDoubles(values).floor()); //sumAsDoubles to support partial base attack bonus multiclassing
         agg("epic base attack bonus", rootleaf, values -> sumAsDoubles(values).floor()); //sumAsDoubles to support partial base attack bonus multiclassing
-        agg("combat maneuvers bonus", leaf, values -> withSign(sumAsInts(values)));
+        agg("combat maneuvers bonus", values -> withSign(sumAsInts(values)));
+        to1("combat maneuvers bonus", "default", new Value(0));
         to1("combat maneuvers bonus", "base attack bonus", value -> value.source("base attack bonus"));
         to1("combat maneuvers bonus", "epic base attack bonus", value -> value.source("epic base attack bonus"));
         to1("combat maneuvers bonus", "size modifier to attack", value -> value.mult(-1).source("size"));
@@ -222,13 +223,14 @@ public class AttackRoutine extends BaseBuilder {
                 final boolean thrown = props.remove("thrown") != null;
                 final Integer rangeIncrement = val01(props.remove("ft range increment")).map(x -> Integer.parseInt(x)).orElse(null);
                 final String baseDamageOverride = val01(props.remove("base damage")).orElse(null);
+                final String damageType = val01(props.remove("damage type")).orElse(null);
                 final int naturalWeaponDamageSizeModifier = Optional.ofNullable(props.remove("natural weapon damage size modifiers"))
                         .map(x -> sumInts(x.stream().map(y -> Integer.parseInt(y)).toList()))
                         .orElse(0);
                 final boolean noStrengthToDamage = props.remove("no strength to damage") != null;
                 final boolean halfStrengthToDamage = props.remove("half strength to damage") != null;
                 final boolean finessable = props.remove("finessable") != null;
-                final boolean weaponFinesseDexToDamage = props.remove("finesse dex to damage") != null;
+                final boolean weaponDexToDamage = props.remove("finesse dex to damage") != null;
                 final boolean light = props.remove("light") != null;
                 final boolean oneHanded = props.remove("one-handed") != null;
                 final boolean twoHanded = props.remove("two-handed") != null;
@@ -381,7 +383,7 @@ public class AttackRoutine extends BaseBuilder {
                         strToDamage = new Value(strengthModifier, "default thrown strength");
                     }
                 }
-                if (dexterityModifier != null && melee && finessable && (globalFinesseDexToDamage || weaponFinesseDexToDamage)) {
+                if (dexterityModifier != null && melee && finessable && (globalFinesseDexToDamage || weaponDexToDamage)) {
                     if (strToDamage == null) {
                         damageModifiers.add(new Value(dexterityModifier, "dexterity"));
                     } else if (strToDamage.getIntValue() < dexterityModifier) {
@@ -444,6 +446,8 @@ public class AttackRoutine extends BaseBuilder {
                 attackRoutine.append(baseDamage);
                 if (damageModifier != 0)
                     attackRoutine.append(withSign(damageModifier));
+                if (damageType != null)
+                    attackRoutine.append(" ").append(damageType);
                 if (weaponImprovedCritical) {
                     if (criticalThreatRange == null || criticalThreatRange == 20) {
                         attackRoutine.append("/19-20");
