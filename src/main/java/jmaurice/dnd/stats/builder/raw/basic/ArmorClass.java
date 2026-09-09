@@ -1,5 +1,8 @@
 package jmaurice.dnd.stats.builder.raw.basic;
 
+import java.util.Arrays;
+import java.util.List;
+
 import jmaurice.dnd.stats.builder.BaseBuilder;
 import jmaurice.dnd.stats.impl.Stats;
 import jmaurice.dnd.stats.impl.Value;
@@ -48,6 +51,15 @@ public class ArmorClass extends BaseBuilder {
         agg("natural armor bonus", leaf, values -> sumAsInts(values));
         to1("armor class",                          "natural armor bonus", value -> value.source("natural"));
         to1("flat-footed armor class",              "natural armor bonus", value -> value.source("natural"));
+        
+        final List<String> types = Arrays.asList("deflection", "luck", "divine", "profane", "sacred");
+        types.forEach(type -> agg(type + " bonus to armor class", root, values -> maxAsInts(values)));
+        types.forEach(type -> to1("armor class",                          type + " bonus to armor class"));
+        types.forEach(type -> to1("touch armor class",                    type + " bonus to armor class"));
+        types.forEach(type -> to1("combat maneuvers defense",             type + " bonus to armor class"));
+        types.forEach(type -> to1("flat-footed armor class",              type + " bonus to armor class"));
+        types.forEach(type -> to1("flat-footed touch armor class",        type + " bonus to armor class"));
+        types.forEach(type -> to1("flat-footed combat maneuvers defense", type + " bonus to armor class"));
         
     }
 
