@@ -24,12 +24,13 @@ public class Main {
         try {
             final File inputFile = new File("../data/stats.fods");
             final String inputFileSheetName = "Sheet1";
-            final File outputFile = new File("../data/generated.csv");
+            final File outputStatsListCsv = new File("../data/generated.csv");
+            final File outputStatBlockHtml = new File("../data/stats.html");
             long lastModified = 1;
             while (true) {
                 final long lastModified2 = inputFile.lastModified();
                 if (lastModified != lastModified2) {
-                    updateOutputFile(inputFile, inputFileSheetName, outputFile);
+                    updateOutputFiles(inputFile, inputFileSheetName, outputStatsListCsv, outputStatBlockHtml);
                     lastModified = lastModified2;
                 }
                 Thread.sleep(1000);
@@ -42,9 +43,16 @@ public class Main {
         System.exit(0);
     }
     
-    private static void updateOutputFile(final File inputFile, final String inputFileSheetName, final File outputFile) throws IOException {
+    private static void updateOutputFiles(
+            final File inputFile, 
+            final String inputFileSheetName, 
+            final File outputStatsListCsv,
+            final File outputStatBlockHtml
+            ) throws IOException {
         System.out.println("updateOutputFile: starting");
-        final StringBuilder outputFileContent = new StringBuilder();
+        final StringBuilder outputStatsListCsvContent = new StringBuilder();
+        final StringBuilder outputStatBlockHtmlContent = new StringBuilder();
+        outputStatBlockHtmlContent.append("<p style=\"white-space: pre-wrap;\">");
         final Map<String, String> creatureInputs = ParseCreatureInputsFromSheet.read(inputFile, inputFileSheetName);
         for (final Map.Entry<String, String> creatureInput : creatureInputs.entrySet()) {
             final String creatureName = creatureInput.getKey();
@@ -66,25 +74,34 @@ public class Main {
                         .filter(stat -> stat.getValues().size() > 0)
                         .flatMap(stat -> stat.getValues().stream().map(v -> stat.name() + "=" + serialize(v)))
                         .collect(Collectors.joining(";;"));
-                outputFileContent.append(creatureName);
-                outputFileContent.append("\t");
-                outputFileContent.append("\"");
-                outputFileContent.append(";;");
-                outputFileContent.append(creatureOutput.replace("\"", "\"\""));
-                outputFileContent.append(";;");
-                outputFileContent.append("\"");
+                outputStatsListCsvContent.append(creatureName);
+                outputStatsListCsvContent.append("\t");
+                outputStatsListCsvContent.append("\"");
+                outputStatsListCsvContent.append(";;");
+                outputStatsListCsvContent.append(creatureOutput.replace("\"", "\"\""));
+                outputStatsListCsvContent.append(";;");
+                outputStatsListCsvContent.append("\"");
+                
+                outputStatBlockHtmlContent.append(valuedStats.get("stat block 3.5 short-form").getStringValue());
+                outputStatBlockHtmlContent.append("<br/><br/>");
+                
             } catch (final Exception e) {
                 new RuntimeException("Error running creature " + creatureName, e).printStackTrace();;
-                outputFileContent.append(creatureName);
-                outputFileContent.append("\t");
-                outputFileContent.append("\"");
-                outputFileContent.append(getUsefulMessage(e).replace("\"", "\"\""));
-                outputFileContent.append("\"");
+                outputStatsListCsvContent.append(creatureName);
+                outputStatsListCsvContent.append("\t");
+                outputStatsListCsvContent.append("\"");
+                outputStatsListCsvContent.append(getUsefulMessage(e).replace("\"", "\"\""));
+                outputStatsListCsvContent.append("\"");
             }
-            outputFileContent.append("\n");
+            outputStatsListCsvContent.append("\n");
         }
-        try (final Writer fout = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8))) {
-            fout.write(outputFileContent.toString());
+        outputStatBlockHtmlContent.append("</p>");
+        try (final Writer fout = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputStatsListCsv), StandardCharsets.UTF_8))) {
+            fout.write(outputStatsListCsvContent.toString());
+            fout.flush();
+        }
+        try (final Writer fout = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputStatBlockHtml), StandardCharsets.UTF_8))) {
+            fout.write(outputStatBlockHtmlContent.toString());
             fout.flush();
         }
     }
