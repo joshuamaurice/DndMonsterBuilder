@@ -119,6 +119,11 @@ public class BaseBuilder {
     }
     
     /** the rule will not be called when the input is empty aka zero-values */
+    protected void toN(String outputStatName, String inputStatName) {
+        toN(outputStatName, inputStatName, null, values -> values);
+    }
+    
+    /** the rule will not be called when the input is empty aka zero-values */
     protected void toN(String outputStatName, String inputStatName, Function<List<Value>, List<Value>> rule) {
         toN(outputStatName, inputStatName, null, rule);
     }
