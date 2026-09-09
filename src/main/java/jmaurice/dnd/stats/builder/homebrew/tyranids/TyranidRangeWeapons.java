@@ -14,19 +14,31 @@ public class TyranidRangeWeapons extends BaseBuilder {
     public TyranidRangeWeapons(final Stats stats) { super(stats); }
 
     public void build() {
-        //"no strength to damage"
+        //resisted by: touch, attack bonus, armor pen, roll twice and take better, reflex half, reflex negates,
+        //area attack
+        //damage types: physical, acid, ability score damage,
+        //crit range, crit multiplier, 
+        //additional effects: 
+        //      affliction (ongoing),
+        //      sickened, nauseated, 
+        //      entangle, entangled and anchored
+        //      grab, constrict, rend, 
+        //      swallow whole,
+        
+        //--
+        //Gaunt
 
         //Shoots darts
-        //12 in, atks 2, str 5, AP -1, dmg 1, assault, pistol, 
-        weapon("spinefists", 20, 3, "d4", Arrays.asList("additional effect=does not provoke", "half strength to damage"));
+        //12 in, atks 2, str 3, AP 0, dmg 1, assault, pistol, 
+        weapon("spinefists", 20, 5, "d4", Arrays.asList("additional effect=does not provoke", "half strength to damage"));
         
         //Shoots beetles that eat into enemy
         //18 in, atks 1, str 5, AP -1, dmg 1, assault
-        weapon("fleshborer", 30, 5, "d6", Arrays.asList("additional effect=borer beetles"));
+        weapon("fleshborer", 30, 5, "d4", Arrays.asList("additional effect=vs touch AC", "additional effect=borer beetles"));
         to1("borer beetles", "fleshborer");
         
         //Shoots worms that eat into enemy
-        //18 in, atks 2, str 4, AP  0, dmg 1, assault
+        //18 in, atks 2, str 3, AP  0, dmg 1, assault
         weapon("termagant devourer", 30, 5, "d6", Arrays.asList("additional effect=flesh worms"));
         to1("flesh worms", "termagant devourer");
         
@@ -35,8 +47,8 @@ public class TyranidRangeWeapons extends BaseBuilder {
         weapon("strangleweb", 30, 5, "d6", Arrays.asList("additional effect=entangle"));
         
         //Shoots harpoons
-        //24 in, atks 1, str 4, AP -1, dmg 1, heavy (+1 to-hit if stationary), (10th)
-        weapon("spike rifle", 40, 7, "d6", Arrays.asList());
+        //24 in, atks 1, str 4, AP -1, dmg 1, heavy (10th)
+        weapon("spike rifle", 40, 5, "d8", Arrays.asList());
         
         //Shoots shrapnel warhead as artillery
         //18 in, atks d3, str 5, AP 0, dmg 1, heavy, blast
@@ -47,17 +59,18 @@ public class TyranidRangeWeapons extends BaseBuilder {
         weapon("barblauncher", 40, 5, "d6", Arrays.asList());
         
         //--
+        //Warrior
         
         //Shoots worms that eat into enemy
         //18 in, atks 5, str 4, AP  0, dmg 1, assault
-        weapon("devourer", 30, 12, "d6", Arrays.asList("additional effect=flesh worms"));
-        to1("devourer", "devourers", root);
-        to1("flesh worms", "devourer");
+        weapon("warrior devourer", 30, 12, "d6", Arrays.asList("additional effect=flesh worms"));
+        to1("warrior devourer", "warrior devourers", root);
+        to1("flesh worms", "warrior devourer");
         
         //Shoots maggots that explode on contact, releasing acid
         //24 in, atks 3, str 5, AP -2, dmg 1, assault
-        weapon("deathspitter", 40, 12, "d4", Arrays.asList("additional effect=touch"));
-        to1("deathspitter", "deathspitters", root);
+        weapon("warrior deathspitter", 40, 12, "d4", Arrays.asList("damage type=acid", "attack bonus=2"));
+        to1("warrior deathspitter", "warrior deathspitters", root);
 
         //Shoots metallic crystaline shards (coated with poison or corrosive substances) 
         //36 in, atks d3, str 8, AP -3, dmg 2, assault
@@ -68,19 +81,42 @@ public class TyranidRangeWeapons extends BaseBuilder {
         weapon("barbed strangler", 60, 12, "d6", Arrays.asList("additional effect=entangle and anchored"));
         
         //--
+        //Carnifex
         
-        //Shoots bigger metallic crystaline shards (coated with poison or corrosive substances) 
-        //36 in, atks 3, str 9, AP -3, dmg 4, heavy
-        weapon("heavy venom cannon", 60, 25, "d6", Arrays.asList("attack modifier=3"));
+        //Shoots maggots that eat into target and then explode
+        //24 in, atks 3, str 7, AP -3, dmg 1, assault
+        weapon("carnifex deathspitter with slimer maggots", 40, 25, "d4", Arrays.asList("damage type=acid", "additional effect=vs touch AC"));
+        to1("carnifex deathspitter with slimer maggots", "carnifex deathspitters with slimer maggots", root);
+        to1("slimer maggots", "carnifex deathspitter with slimer maggots");
+        
+        //Shoots worms that eat into the target and seek our nerves and the brain
+        //18 in, atks 6, str 6, AP 0, dmg 1, assault
+        weapon("carnifex deathspitter with brainleech worms", 30, 25, "d6", Arrays.asList());
+        to1("carnifex deathspitter with brainleech worms", "carnifex deathspitters with brainleech worms", root);
+        to1("brainleech worms", "carnifex deathspitter with brainleech worms");
         
         //Shoots a bigger seedpod that grows to maturity in a second, releasing thorny vines in all directions
         //36 in, atks d3+3, str 8, AP -2, dmg 2, heavy, blast
         weapon("stranglethorn cannon", 60, 25, "d6", Arrays.asList("additional effect=area attack", "additional effect=entangle and anchored"));
         
+        //6 in, atks 5, str 5, AP 0, dmg 1
+        //spine banks
+        
+        //--
+        //tyrant
+        
+        //Shoots bigger metallic crystaline shards (coated with poison or corrosive substances) 
+        //36 in, atks 3, str 9, AP -3, dmg 4, heavy
+        weapon("heavy venom cannon", 60, 25, "d6", Arrays.asList("attack modifier=3"));
+        
+        //also stranglethorn cannon, same stats
+        
         //--
         
         borerBeetles();
         fleshWorms();
+        slimerMaggots();
+        brainleechWorms();
     }
     
     private void weapon(
@@ -128,7 +164,7 @@ public class TyranidRangeWeapons extends BaseBuilder {
                 makes a single Fortitude saving throw.
                 The DC is the lowest DC among the effects - plus 1 for each additional stack.
                 """.replace("\n", " ").replaceAll(" +", " ").trim();
-        
+        agg("borer beetles", values -> values.isEmpty() ? null : new Value(1));
         input("borer beetles dc", Arrays.asList("borer beetles", "aberration hit dice", "constitution modifier"), stats -> {
             final boolean borerBeetles2 = stats.get("borer beetles").getBooleanValue(false);
             if ( ! borerBeetles2)
@@ -156,6 +192,7 @@ public class TyranidRangeWeapons extends BaseBuilder {
                 makes a single Fortitude saving throw.
                 The DC is the lowest DC among the effects - plus 1 for each additional stack.
                 """.replace("\n", " ").replaceAll(" +", " ").trim();
+        agg("flesh worms", values -> values.isEmpty() ? null : new Value(1));
         input("flesh worms dc", Arrays.asList("flesh worms", "aberration hit dice", "constitution modifier"), stats -> {
             final boolean fleshWorms2 = stats.get("flesh worms").getBooleanValue(false);
             if ( ! fleshWorms2)
@@ -166,6 +203,14 @@ public class TyranidRangeWeapons extends BaseBuilder {
             return new Value(dc);
         });
         to1("special abilities long", "flesh worms dc", value -> new Value(descript.replace("__DC__", value.getStringValue())));
+    }
+    
+    private void slimerMaggots() {
+        to1("special abilities long", "slimer maggots", leaf, new Value("brainleech worms"));
+    }
+    
+    private void brainleechWorms() {
+        to1("special abilities long", "brainleech worms", leaf, new Value("brainleech worms"));
     }
     
 }
