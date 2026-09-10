@@ -12,12 +12,12 @@ public class ArmorClass extends BaseBuilder {
     public ArmorClass(final Stats stats) { super(stats); }
 
     public void build() {
-        agg("armor class",                          leaf, values -> sumAsInts(values));
-        agg("touch armor class",                    leaf, values -> sumAsInts(values));
-        agg("combat maneuvers defense",             leaf, values -> sumAsInts(values));
-        agg("flat-footed armor class",              leaf, values -> sumAsInts(values));
-        agg("flat-footed touch armor class",        leaf, values -> sumAsInts(values));
-        agg("flat-footed combat maneuvers defense", leaf, values -> sumAsInts(values));
+        agg("armor class",                          leaf, values -> sumAsInts(values, SkipZero));
+        agg("touch armor class",                    leaf, values -> sumAsInts(values, SkipZero));
+        agg("combat maneuvers defense",             leaf, values -> sumAsInts(values, SkipZero));
+        agg("flat-footed armor class",              leaf, values -> sumAsInts(values, SkipZero));
+        agg("flat-footed touch armor class",        leaf, values -> sumAsInts(values, SkipZero));
+        agg("flat-footed combat maneuvers defense", leaf, values -> sumAsInts(values, SkipZero));
         
         to1("armor class",                          "default", new Value(10));
         to1("touch armor class",                    "default", new Value(10));
@@ -54,12 +54,12 @@ public class ArmorClass extends BaseBuilder {
         
         final List<String> types = Arrays.asList("deflection", "luck", "divine", "profane", "sacred");
         types.forEach(type -> agg(type + " bonus to armor class", root, values -> maxAsInts(values)));
-        types.forEach(type -> to1("armor class",                          type + " bonus to armor class"));
-        types.forEach(type -> to1("touch armor class",                    type + " bonus to armor class"));
-        types.forEach(type -> to1("combat maneuvers defense",             type + " bonus to armor class"));
-        types.forEach(type -> to1("flat-footed armor class",              type + " bonus to armor class"));
-        types.forEach(type -> to1("flat-footed touch armor class",        type + " bonus to armor class"));
-        types.forEach(type -> to1("flat-footed combat maneuvers defense", type + " bonus to armor class"));
+        types.forEach(type -> to1("armor class",                          type + " bonus to armor class", value -> value.source(type)));
+        types.forEach(type -> to1("touch armor class",                    type + " bonus to armor class", value -> value.source(type)));
+        types.forEach(type -> to1("combat maneuvers defense",             type + " bonus to armor class", value -> value.source(type)));
+        types.forEach(type -> to1("flat-footed armor class",              type + " bonus to armor class", value -> value.source(type)));
+        types.forEach(type -> to1("flat-footed touch armor class",        type + " bonus to armor class", value -> value.source(type)));
+        types.forEach(type -> to1("flat-footed combat maneuvers defense", type + " bonus to armor class", value -> value.source(type)));
         
     }
 
