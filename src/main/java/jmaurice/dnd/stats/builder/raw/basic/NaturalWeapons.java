@@ -27,11 +27,13 @@ public class NaturalWeapons extends BaseBuilder {
                 );
         
         naturalWeapons.forEach(name -> agg(name, root, values -> sumAsInts(values)));
-        naturalWeapons.forEach(name -> to1("weapon properties", name, value -> {
-            return new Value("name=" + name + ",num=" + value.getIntValue() + ",melee,natural");
-        }));
+        naturalWeapons.forEach(name -> to1("weapon properties", name, value -> 
+            new Value("name=" + name + ",num=" + value.getIntValue() + ",melee,natural")
+        ));
         reducedDamageNaturalWeapons.forEach(name -> to1("weapon properties", name, new Value("name=" + name + ",natural weapon damage size modifiers=-1")));
         secondaryNaturalWeapons.forEach(name -> to1("weapon properties", name, new Value("name=" + name + ",secondary natural")));
+        
+        to1("weapon properties", "swarm attack", root, new Value("name=swarm,num=1,swarm,natural"));
     }
 
 }
