@@ -11,9 +11,8 @@ public class Feats extends BaseBuilder {
     public Feats(final Stats stats) { super(stats); }
 
     public void build() {
+        toN("feats", "feat", root, values -> values);
         aggN("feats", values -> sort(values));
-        toN("feats2", "feats", values -> values);
-        agg("feats2", leaf, values -> join(sort(values), ", "));
         
         to1("feats", "critical focus", root, new Value("critical focus"));
         to1("feats", "crowded charge", root, new Value("crowded charge"));
