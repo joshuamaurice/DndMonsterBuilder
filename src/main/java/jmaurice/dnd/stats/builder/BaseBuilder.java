@@ -1,6 +1,7 @@
 package jmaurice.dnd.stats.builder;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -154,7 +155,13 @@ public class BaseBuilder {
     
     /** 
      * asserts zero or one value
-     * the rule will not be called when the input is empty aka zero-values 
+     */
+    protected void agg(String statName) {
+        stats.agg(statName, values -> list01(val01(values)));
+    }
+    
+    /** 
+     * asserts zero or one value
      */
     protected void agg(String statName, RootLeafOption rootLeafOption) {
         stats.agg(statName, values -> list01(val01(values)));
@@ -214,16 +221,50 @@ public class BaseBuilder {
     
     //
 
-    protected Value join(List<Value> values, String delimiter) {
+    protected Optional<String> joinS(List<String> values) {
+        return joinS(values, ", ");
+    }
+
+    protected Optional<String> joinS(List<String> values, String delimiter) {
+        if (values.isEmpty())
+            return Optional.empty();
+        final StringBuilder r = new StringBuilder();
+        for (String value : values) {
+            if ( ! r.isEmpty())
+                r.append(delimiter);
+            r.append(value.trim());
+        }
+        final String r2 = r.toString().replaceAll("^( *,)* *", "").replaceAll("( *,)* *$", "");
+        if (r2.isEmpty())
+            return Optional.empty();
+        return Optional.of(r2);
+    }
+
+    protected Optional<Value> join(List<Value> values) {
+        return join(values, ", ");
+    }
+    
+    protected Optional<Value> join(List<Value> values, String delimiter) {
+        if (values.isEmpty())
+            return Optional.empty();
         final StringBuilder r = new StringBuilder();
         for (Value value : values) {
             if ( ! r.isEmpty())
                 r.append(delimiter);
-            r.append(value.getStringValue());
+            r.append(value.getStringValue().trim());
         }
-        if (r.isEmpty())
-            return null;
-        return new Value(r.toString());
+        final String r2 = r.toString().replaceAll("^( *,)* *", "").replaceAll("( *,)* *$", "");
+        if (r2.isEmpty())
+            return Optional.empty();
+        return Optional.of(new Value(r2));
+    }
+
+    protected Optional<Value> join(ReadOnlyValuedStat stat) {
+        return join(stat.getValues(), ", ");
+    }
+    
+    protected Optional<Value> join(ReadOnlyValuedStat stat, String delimiter) {
+        return join(stat.getValues(), delimiter);
     }
     
     protected Value maxAsDoubles(List<Value> values) {
@@ -260,6 +301,12 @@ public class BaseBuilder {
         return maxAsInts(stats.stream().flatMap(stat -> stat.getValues().stream()).toList());
     }
     
+    protected List<String> sortS(List<String> values) {
+        values = new ArrayList<>(values);
+        Collections.sort(values);
+        return values;
+    }
+    
     protected List<Value> sort(List<Value> values) {
         values = new ArrayList<>(values);
         Collections.sort(values, (a,b) -> a.getStringValue().compareTo(b.getStringValue()));
@@ -281,16 +328,22 @@ public class BaseBuilder {
         return new Value(sum, source.isEmpty() ? null : source.toString());
     }
     
-    protected Value sumAsInts(List<Value> values) {
+    protected static class SumAsIntsOption {};
+    protected static final SumAsIntsOption SkipZero = new SumAsIntsOption();
+    
+    protected Value sumAsInts(List<Value> values, SumAsIntsOption... options) {
+        final boolean skipZero = Arrays.asList(options).contains(SkipZero);
         int sum = 0;
         final StringBuilder source = new StringBuilder();
         for (Value value : values) {
             final int valueInt = value.getIntValue();
+            if (skipZero && valueInt == 0)
+                continue;
             sum += valueInt;
             if ( ! source.isEmpty())
                 source.append(", ");
             source.append(valueInt);
-            if (value.source != null)
+            if (value.source != null && ! value.source.equals("default"))
                 source.append(" ").append(value.source);
         }
         return new Value(sum, source.isEmpty() ? null : source.toString());
