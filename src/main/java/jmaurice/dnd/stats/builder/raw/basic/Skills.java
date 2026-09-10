@@ -49,14 +49,17 @@ public class Skills extends BaseBuilder {
     public void build() {
         aggN("skills", leaf, values -> sort(values));
         allSkills.forEach(skill -> to1("skills", skill, value -> new Value(skill + " " + withSign(value.getIntValue()), value.source)));
+        allSkills.forEach(skill -> to1(skill, "default", new Value(0)));
         
-        agg("trained skills2", values -> join(sort(values), ", "));
-        allSkills.forEach(skill -> stats.input("trained skills2", Arrays.asList(skill, skill + " ranks"), stats -> {
-            final Integer skillRanks = stats.get(skill + " ranks").getIntValue();
-            if (skillRanks == null)
-                return null;
+        aggN("relevant skills", values -> sort(values));
+        allSkills.forEach(skill -> stats.input("relevant skills", Arrays.asList(skill, skill + " ranks"), stats -> {
             final Value skillMod = stats.get(skill).val1();
-            return Collections.singletonList(new Value(skill + " " + withSign(skillMod.getIntValue()), skillMod.source));
+            final Integer skillRanks = stats.get(skill + " ranks").getIntValue();
+            if (skillRanks != null)
+                return Collections.singletonList(new Value(skill + " " + withSign(skillMod.getIntValue()), skillMod.source));
+            if (Arrays.asList("perception", "stealth").contains(skill))
+                return Collections.singletonList(new Value(skill + " " + withSign(skillMod.getIntValue()), skillMod.source));
+            return null;
         }));
         
         allSkills.forEach(skill -> agg(skill + " class skill", root, input -> new Value(3, first(input).source))); //TODO remove root
