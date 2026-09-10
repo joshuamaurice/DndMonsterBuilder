@@ -1,5 +1,7 @@
 package jmaurice.dnd.graph;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -164,6 +166,47 @@ public class Graph<Node> {
         if (edges.get(out) == null)
             throw new IllegalArgumentException("No such node: " + out);
         edges.get(node).add(out);
+    }
+
+    public List<Node> findShortestCycle() {
+        final List<Node> nodes = new ArrayList<>(edges.keySet());
+        Map<Node, Map<Node, List<Node>>> reachabilityGraph = new LinkedHashMap<>();
+        for (final Node node : nodes) {
+            reachabilityGraph.put(node, new LinkedHashMap<>());
+        }
+        for (int i = 0; i < nodes.size(); ++i) {
+            final Node node1 = nodes.get(i);
+            final Map<Node, List<Node>> node1Reachability = reachabilityGraph.get(node1);
+            for (int j = 0; j <= i; ++j) {
+                final Node node2 = nodes.get(i);
+                if ( ! edges.get(node1).contains(node2))
+                    continue;
+                if (node1 == node2)
+                    return Arrays.asList(node1);
+                reachabilityGraph.get(node1).put(node2, Arrays.asList(node1, node2));
+                final Collection<List<Node>> listOfPathsFromNode2 = reachabilityGraph.get(node1).values();
+                for (final List<Node> pathFromNode2 : listOfPathsFromNode2) {
+                    final Node node3 = pathFromNode2.get(pathFromNode2.size() - 1);
+                    List<Node> pathNode1ToNode3 = node1Reachability.get(node3);
+                    if (pathNode1ToNode3 == null || 1 + pathFromNode2.size() < pathNode1ToNode3.size()) {
+                        pathNode1ToNode3.clear();
+                        pathNode1ToNode3.add(node1);
+                        pathNode1ToNode3.addAll(pathFromNode2);
+                    }
+                }
+            }
+        }
+        List<Node> shortestCycleGlobally = null;
+        for (final Map.Entry<Node, Map<Node, List<Node>>> nodeReachability : reachabilityGraph.entrySet()) {
+            final Node node = nodeReachability.getKey();
+            final List<Node> shortestCycleWithNode = nodeReachability.getValue().get(node);
+            if (shortestCycleWithNode != null) {
+                if (shortestCycleGlobally == null || shortestCycleWithNode.size() < shortestCycleGlobally.size()) {
+                    shortestCycleGlobally = shortestCycleWithNode;
+                }
+            }
+        }
+        return shortestCycleGlobally;
     }
 
 }
