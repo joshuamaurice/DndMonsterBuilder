@@ -27,6 +27,9 @@ public class TyranidMeleeWeapons extends BaseBuilder {
         to1("weapon properties", "lashwhip", root, input -> {
             return new Value("name=lashwhip,num=" + input.getIntValue() + ",melee,natural,natural weapon damage size modifiers=-2,half strength to damage,additional effect=entangle as per a net weapon");
         });
+        to1("weapon properties", "lashwhip pod", root, input -> {
+            return new Value("name=lashwhip pod,num=1,num attacks multiplier=10,melee,natural,natural weapon damage size modifiers=-2,half strength to damage,additional effect=entangle as per a net weapon");
+        });
         
         //
         to1("weapon properties", "crushing claws", root, input -> {
