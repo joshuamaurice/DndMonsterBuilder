@@ -14,11 +14,17 @@ public class Outsiders extends BaseBuilder {
     public Outsiders(final Stats stats) { super(stats); }
 
     public void build() {
-        //aberration hit dice
+        //outsider hit dice
         agg("outsider hit dice", root, values -> sumAsInts(values));
         to1("hit dice", "outsider hit dice", input -> new Value(input.getIntValue() + "d10", "outsider"));
-        to1("base attack bonus", "outsider hit dice", input -> input.mult(0.75).source("outsider"));
+        to1("base attack bonus", "outsider hit dice", input -> input.mult(1.00).source("outsider"));
         saves();
+        //epic outsider hit dice
+        agg("epic outsider hit dice", root, values -> sumAsInts(values));
+        to1("hit dice", "epic outsider hit dice", input -> new Value(input.getIntValue() + "d10", "epic outsider"));
+        to1("base attack bonus", "epic outsider hit dice", input -> input.mult(0.5).source("epic outsider"));
+        Arrays.asList("fortitude", "reflex", "will").forEach(save -> 
+                to1(save, "epic outsider hit dice", input -> input.mult(0.5).source("epic outsider")));
         //outsider creature type
         to1("outsider", "creature type", input -> input.getStringValue().equals("outsider") ? new Value(true) : null);
         to1("senses", "outsider", new Value("darkvision 60 ft")); 
@@ -43,7 +49,7 @@ public class Outsiders extends BaseBuilder {
                 if ( ! Arrays.asList("fortitude", "reflex", "will").contains(goodSave))
                     throw new RuntimeException("invalid outsider good save: " + goodSave);
             }
-            return join(sort(values), ", ");
+            return join(sort(values), ", ").orElse(null);
         });
         
         for (final String save : Arrays.asList("fortitude", "reflex", "will")) {
