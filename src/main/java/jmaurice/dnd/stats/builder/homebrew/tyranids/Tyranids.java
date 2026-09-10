@@ -52,7 +52,9 @@ public class Tyranids extends BaseBuilder {
         input("natural armor bonus", Arrays.asList("tyranid", "aberration hit dice"), stats -> {
             if ( ! stats.get("tyranid").getBooleanValue(false))
                 return null;
-            final int numHitDice = stats.get("aberration hit dice").getIntValue();
+            final Integer numHitDice = stats.get("aberration hit dice").getIntValue();
+            if (numHitDice == null)
+                return null;
             return new Value(numHitDice, "advancement").mult(0.5).floor();
         });
     }
