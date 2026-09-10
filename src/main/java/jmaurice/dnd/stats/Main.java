@@ -82,7 +82,7 @@ public class Main {
                 outputStatsListCsvContent.append(";;");
                 outputStatsListCsvContent.append("\"");
                 
-                outputStatBlockHtmlContent.append(valuedStats.get("stat block 3.5 short-form").getStringValue());
+                outputStatBlockHtmlContent.append(valuedStats.get("stat block PFSRD").getStringValue());
                 outputStatBlockHtmlContent.append("<br/><br/>");
                 
             } catch (final Exception e) {
