@@ -8,8 +8,9 @@ public class Stat {
     
     String name;
     List<InputRule> inputRules = new ArrayList<>();
+    List<PostRule> preAggRules = new ArrayList<>();
     AggRule aggRule;
-    PostRule postRule;
+    List<PostRule> postAggRules = new ArrayList<>();
     boolean root;
     boolean leaf;
     

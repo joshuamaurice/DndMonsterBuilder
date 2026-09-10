@@ -17,6 +17,7 @@ public class StatsExecutor {
     
     private Stats stats;
     private Map<String, ValuedStat> valued;
+    private List<String> messages = new ArrayList<>();
     
     public static void execute(final Stats stats, final Map<String, ValuedStat> valuedStats) {
         final StatsExecutor x = new StatsExecutor();
@@ -30,6 +31,9 @@ public class StatsExecutor {
         final ExecutorService executor = Executors.newFixedThreadPool(16);
         try (Closeable shutdownExecutor = () -> shutdownAndWait(executor, 1, TimeUnit.MINUTES)) {
             Traversal.ordered(stats.graph(), stats.inverseGraph(), name -> execute(valued.get(name)), executor);
+            for (final String message : messages) {
+                System.out.println(message);
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);
@@ -50,11 +54,10 @@ public class StatsExecutor {
     
     private void execute(final ValuedStat stat) {
         try {
-//            synchronized (this) {
-//                System.out.println(Thread.currentThread().getName() + ": "
-//                        + "Starting " + stat.name);
-//            }
             for (final InputRule rule : stat.stat.inputRules) {
+                execute(stat, rule);
+            }
+            for (final PostRule rule : stat.stat.preAggRules) {
                 execute(stat, rule);
             }
             if (stat.stat.aggRule == null) {
@@ -63,8 +66,8 @@ public class StatsExecutor {
             } else {
                 execute(stat, stat.stat.aggRule);
             }
-            if (stat.stat.postRule != null) {
-                execute(stat, stat.stat.postRule);
+            for (final PostRule rule : stat.stat.postAggRules) {
+                execute(stat, rule);
             }
         } catch (Exception e) {
             throw new RuntimeException("failed execute for Stat " + stat.stat.name + ". Cause: " + e.getMessage(), e);
@@ -120,7 +123,8 @@ public class StatsExecutor {
         //I could be fancier with my locking and be more fine-grain, but this is fine for now.
         synchronized (this) {
             final Map<String, ValuedStat> writableStats = new LinkedHashMap<>();
-            rule.writableStatNames.forEach(name -> writableStats.put(name, valued.get(name)));
+            writableStats.put(stat.name(), stat);
+            rule.additionalWritableStatNames.forEach(name -> writableStats.put(name, valued.get(name)));
             final Map<String, ReadOnlyValuedStat> readOnlyStats = new LinkedHashMap<>();
             rule.readOnlyStatNames.forEach(name -> readOnlyStats.put(name, newReadOnlyStat(valued.get(name))));
             rule.rule.accept(writableStats, readOnlyStats);
