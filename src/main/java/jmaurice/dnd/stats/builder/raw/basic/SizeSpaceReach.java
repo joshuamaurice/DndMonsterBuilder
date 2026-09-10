@@ -23,6 +23,7 @@ public class SizeSpaceReach extends BaseBuilder {
                 case "huge"       -> -2;
                 case "gargantuan" -> -4;
                 case "colossal"   -> -8;
+                case "colossal-plus" -> -12;
                 default -> throw new RuntimeException("unrecognized size value >>" + value + "<<");
             };
             return new Value(x, "size");
@@ -39,6 +40,7 @@ public class SizeSpaceReach extends BaseBuilder {
                 case "huge"       -> -4;
                 case "gargantuan" -> -6;
                 case "colossal"   -> -8;
+                case "colossal-plus" -> -10;
                 default -> throw new RuntimeException("unrecognized size value >>" + value + "<<");
             };
             return new Value(x, "size");
@@ -54,6 +56,7 @@ public class SizeSpaceReach extends BaseBuilder {
                 case "huge"       -> -8;
                 case "gargantuan" -> -12;
                 case "colossal"   -> -16;
+                case "colossal-plus" -> -20;
                 default -> throw new RuntimeException("unrecognized size value >>" + value + "<<");
             };
             return new Value(x, "size");
@@ -71,6 +74,7 @@ public class SizeSpaceReach extends BaseBuilder {
                 case "huge"       -> "15";
                 case "gargantuan" -> "20";
                 case "colossal"   -> "30";
+                case "colossal-plus" -> "40";
                 default -> throw new RuntimeException("unrecognized size value >>" + value + "<<");
             };
             return new Value(space + " ft");
@@ -93,6 +97,7 @@ public class SizeSpaceReach extends BaseBuilder {
                 case "huge"       -> shortCreatureReach ? "10" : "15";
                 case "gargantuan" -> shortCreatureReach ? "15" : "20";
                 case "colossal"   -> shortCreatureReach ? "20" : "30";
+                case "colossal-plus" -> shortCreatureReach ? "30" : "40";
                 default -> throw new RuntimeException("unrecognized size value >>" + size + "<<");
             };
             return new Value(reach + " ft");

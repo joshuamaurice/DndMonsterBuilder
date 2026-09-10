@@ -50,6 +50,7 @@ public class TyranidAbilityScores extends BaseBuilder {
                 case "huge"       -> 8;
                 case "gargantuan" -> 12;
                 case "colossal"   -> 16;
+                case "colossal-plus" -> 21;
                 default -> throw new RuntimeException("unexpected size value: " + size);
             };
             return new Value(output, "size");
@@ -70,6 +71,7 @@ public class TyranidAbilityScores extends BaseBuilder {
                 case "huge"       -> -4;
                 case "gargantuan" -> -6;
                 case "colossal"   -> -8;
+                case "colossal-plus" -> -10;
                 default -> throw new RuntimeException("unexpected size value: " + size);
             };
             return new Value(output, "size");
@@ -90,6 +92,7 @@ public class TyranidAbilityScores extends BaseBuilder {
                 case "huge"       -> 4;
                 case "gargantuan" -> 6;
                 case "colossal"   -> 8;
+                case "colossal-plus" -> 10;
                 default -> throw new RuntimeException("unexpected size value: " + size);
             };
             return new Value(output, "size");
