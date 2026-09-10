@@ -63,13 +63,16 @@ public class TyranidRangeWeapons extends BaseBuilder {
         
         //Shoots worms that eat into enemy
         //18 in, atks 5, str 4, AP  0, dmg 1, assault
-        weapon("warrior devourer", 30, 12, "d6", Arrays.asList("additional effect=flesh worms"));
-        to1("warrior devourer", "warrior devourers", root);
-        to1("flesh worms", "warrior devourer");
+        weapon("devourer", 30, 12, "d6", Arrays.asList("additional effect=flesh worms"));
+        to1("devourer", "warrior devourer", root);
+        to1("devourer", "warrior devourers", root);
+        to1("devourer", "carnifex devourer", root);
+        to1("devourer", "carnifex devourers", root);
+        to1("flesh worms", "devourer");
         
         //Shoots maggots that explode on contact, releasing acid
         //24 in, atks 3, str 5, AP -2, dmg 1, assault
-        weapon("warrior deathspitter", 40, 12, "d4", Arrays.asList("damage type=acid", "attack bonus=2"));
+        weapon("warrior deathspitter", 40, 12, "d4", Arrays.asList("damage type=acid", "attack modifier=2"));
         to1("warrior deathspitter", "warrior deathspitters", root);
 
         //Shoots metallic crystaline shards (coated with poison or corrosive substances) 
@@ -109,7 +112,59 @@ public class TyranidRangeWeapons extends BaseBuilder {
         //36 in, atks 3, str 9, AP -3, dmg 4, heavy
         weapon("heavy venom cannon", 60, 25, "d6", Arrays.asList("attack modifier=3"));
         
-        //also stranglethorn cannon, same stats
+        //also stranglethorn cannon, same stats as above
+        
+        //--
+        //tyrannofex
+        
+        //acid spray; same as bio-acid spray
+        
+        //Shoots beetles that eat into enemy
+        //18 in, atks  1, str 5, AP -1, dmg 1, assault ... termagant fleshborer stats
+        //24 in, atks 30, str 5, AP -1, dmg 1, assault ... fleshborer hive stats
+        weapon("fleshborer hive", 30, 5, "d4", Arrays.asList("num attacks multiplier=6", "additional effect=vs touch AC", "additional effect=borer beetles"));
+        to1("borer beetles", "fleshborer hive");
+        
+        //48 in, atks 3, str 14, AP -4, dmg d6+4, heavy, TODO verify
+        weapon("rupture cannon", 80, 25, "d6", Arrays.asList("damage type=fire"));
+        
+        //24 in, atks 8, str 5, AP -1, dmg 1, assault, TODO verify
+        weapon("stinger salvo", 40, 5, "d4", Arrays.asList("additional effect=half strength to damage"));
+        
+        
+        //--
+        //titans
+        
+        //Shoots maggots that explode on contact releasing acid
+        //48 in, atks 8, str 10, AP -3, dmg d3, heavy
+        weapon("bio-cannons", 80, 25, "d4", Arrays.asList("damage type=acid", "additional effect=vs touch AC"));
+        to1("bio-cannons", "bio-cannon", root);
+        
+        //?? in, atks 10, str 14, AP -2, dmg D3+3
+        agg("bio-acid spray", root);
+        input("special abilities long", Arrays.asList("bio-acid spray", "aberration hit dice", "constitution modifier"), stats -> {
+            final int numWeapons = stats.get("bio-acid spray").val01().map(x -> x.getIntValue()).orElse(0);
+            if (numWeapons == 0)
+                return null;
+            final int numHitDice = stats.get("aberration hit dice").getIntValue();
+            final int conMod = stats.get("constitution modifier").getIntValue();
+            return new Value(
+                    """
+                    <b>Bio-Acid Spray (Ex):</b> Fire _NUM_ 60 ft _CONES_ of acid. Reflex half, DC _DC_. SR no.
+                    """
+                    .replace("_NUM_", "" + numWeapons)
+                    .replace("_CONES_", numWeapons == 1 ? "cone" : "cones")
+                    .replace("_DC_", "" + (10 + numHitDice + conMod))
+                    );
+        });
+        
+        to1("special abilities long", "bio-plasma torrent", root, new Value("<b>Bio-Plasma Torrent (Ex):</b>"));
+        
+        //--
+        //Zoanthropes et al
+        
+        //TODO
+        weapon("warp blast", 20, 1, "d6", Arrays.asList());
         
         //--
         
@@ -162,7 +217,7 @@ public class TyranidRangeWeapons extends BaseBuilder {
                 The Fortitude saving throw DC is __DC__.
                 A creature afflicted with multiple stacks of borer beetles, flesh worms, etc.,
                 makes a single Fortitude saving throw.
-                The DC is the lowest DC among the effects - plus 1 for each additional stack.
+                The DC is the lowest DC among the effects plus 1 for each additional stack.
                 """.replace("\n", " ").replaceAll(" +", " ").trim();
         agg("borer beetles", values -> values.isEmpty() ? null : new Value(1));
         input("borer beetles dc", Arrays.asList("borer beetles", "aberration hit dice", "constitution modifier"), stats -> {
@@ -190,7 +245,7 @@ public class TyranidRangeWeapons extends BaseBuilder {
                 The Fortitude saving throw DC is __DC__.
                 A creature afflicted with multiple stacks of flesh worms, flesh worms, etc.,
                 makes a single Fortitude saving throw.
-                The DC is the lowest DC among the effects - plus 1 for each additional stack.
+                The DC is the lowest DC among the effects plus 1 for each additional stack.
                 """.replace("\n", " ").replaceAll(" +", " ").trim();
         agg("flesh worms", values -> values.isEmpty() ? null : new Value(1));
         input("flesh worms dc", Arrays.asList("flesh worms", "aberration hit dice", "constitution modifier"), stats -> {
