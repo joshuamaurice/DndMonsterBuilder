@@ -29,14 +29,16 @@ public class Traversal {
         //then that task might start and finish before the other tasks can even be registered in this method,
         //which will lead to the count being decremented for the first task
         //before we get to the increment of the second task.
-        final AtomicInteger count = new AtomicInteger(1);
+        final AtomicInteger runningCount = new AtomicInteger(1);
+        
+        final AtomicInteger executedCount = new AtomicInteger(0);
         
         for (final Node root : inverse.leafs()) {
-            count.incrementAndGet();
-            executor.execute(() -> ordered2(graph, action, executor, root, remaining, completion, errors, count));
+            runningCount.incrementAndGet();
+            executor.execute(() -> ordered2(graph, action, executor, root, remaining, completion, errors, runningCount, executedCount));
         }
-        count.decrementAndGet();
-        if (0 == count.get()) {
+        runningCount.decrementAndGet();
+        if (0 == runningCount.get()) {
             completion.release();
         }
         completion.acquire();
@@ -46,6 +48,12 @@ public class Traversal {
                 e1.addSuppressed(e2);
             }
             throw e1;
+        }
+        if (executedCount.get() < graph.nodes().size()) {
+            throw new RuntimeException("detected cycle: " + graph.findShortestCycle());
+        }
+        if (executedCount.get() > graph.nodes().size()) {
+            throw new RuntimeException();
         }
     }
     
@@ -57,7 +65,8 @@ public class Traversal {
             final Map<Node, Integer> remaining,
             final Semaphore completion,
             final List<RuntimeException> errors,
-            final AtomicInteger count
+            final AtomicInteger runningCount,
+            final AtomicInteger executedCount
             ) {
         try {
             try {
@@ -69,14 +78,15 @@ public class Traversal {
                 return;
             for (final Node nextNode : graph.edges(node)) {
                 if (0 == remaining.compute(nextNode, (k,v) -> --v)) {
-                    count.incrementAndGet();
-                    executor.execute(() -> ordered2(graph, action, executor, nextNode, remaining, completion, errors, count));
+                    runningCount.incrementAndGet();
+                    executor.execute(() -> ordered2(graph, action, executor, nextNode, remaining, completion, errors, runningCount, executedCount));
                 }
             }
+            executedCount.incrementAndGet();
         } catch (Exception e) {
             errors.add(new RuntimeException("Error while running node: " + node + ". Error: " + e.getMessage(), e));
         } finally {
-            final int c = count.decrementAndGet();
+            final int c = runningCount.decrementAndGet();
             if (c == 0) {
                 completion.release();
             }
