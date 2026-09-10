@@ -16,19 +16,21 @@ public class StatBlocks extends BaseBuilder {
             "alignment",
             "armor class",
             "attack routine",
+            "auras",
             "base attack bonus",
             "challenge rating",
             "charisma",
             "combat maneuvers bonus",
             "combat maneuvers defense",
             "constitution",
-            "creature subtypes2",
             "creature type",
+            "creature subtypes",
+            "damage reduction",
             "defensive abilities",
             "dexterity",
             "epic base attack bonus",
-            "equipment2",
-            "feats2",
+            "equipment",
+            "feats",
             "flat-footed armor class",
             "fortitude",
             "gender",
@@ -37,14 +39,18 @@ public class StatBlocks extends BaseBuilder {
             "immunities",
             "initiative",
             "intelligence",
+            "languages",
             "name",
             "natural armor bonus",
+            "power resistance",
             "race",
             "reach",
             "reflex",
+            "relevant skills",
             "resistances",
             "senses",
             "size",
+            "spell resistance",
             "strength",
             "space",
             "special abilities long",
@@ -52,7 +58,6 @@ public class StatBlocks extends BaseBuilder {
             "speeds",
             "templates",
             "touch armor class",
-            "trained skills2",
             "weaknesses",
             "will",
             "wisdom",
@@ -62,6 +67,7 @@ public class StatBlocks extends BaseBuilder {
 
     public void build() {
         statBlock35ShortForm();
+        statBlockPFSRD();
     }
     
     private void statBlock35ShortForm() {
@@ -79,66 +85,46 @@ public class StatBlocks extends BaseBuilder {
             stats.get("alignment").val01().ifPresent(v -> r.append(" ").append(v.getStringValue()));
             stats.get("gender").val01().ifPresent(v -> r.append(" ").append(v.getStringValue()));
             stats.get("templates").val01().ifPresent(v -> r.append(" ").append(v.getStringValue()));
-            r.append(" ").append(stats.get("race").getStringValue());
-            r.append(";");
-            r.append(" ").append(stats.get("size").getStringValue());
+            r.append(" ");
+            if (stats.get("race").getValues().size() > 0)
+                r.append(stats.get("race").getStringValue());
+            else
+                r.append(stats.get("creature type").getStringValue());
+            r.append("; ");
+            r.append(stats.get("size").getStringValue());
             stats.get("creature type").val01().ifPresent(v -> r.append(" ").append(v.getStringValue()));
-            stats.get("creature subtypes2").val01().ifPresent(v -> r.append(" (").append(v.getStringValue()).append(")"));
-            r.append(";");
-            r.append(" HD ").append(stats.get("hit dice").getStringValue());
-            r.append(",");
-            r.append(" hp").append(stats.get("hit points").getIntValue());
-            r.append(";");
-            r.append(" Init ").append(withSign(stats.get("initiative").getIntValue()));
-            r.append(";");
-            r.append(" Spd ").append(stats.get("speeds").getStringValue());
-            r.append(";");
-            r.append(" AC ").append(stats.get("armor class").getIntValue());
+            join(stats.get("creature subtypes")).ifPresent(x -> r.append(" (").append(x.getStringValue()).append(")"));
+            r.append("; HD ").append(stats.get("hit dice").getStringValue());
+            r.append(", hp ").append(stats.get("hit points").getIntValue());
+            r.append("; Init ").append(withSign(stats.get("initiative").getIntValue()));
+            join(stats.get("speeds")).ifPresent(x -> r.append("; Spd ").append(x.getStringValue()));
+            r.append("; AC ").append(stats.get("armor class").getIntValue());
             if (stats.get("natural armor bonus").val01().filter(x -> x.getIntValue() != 0).map(x -> true).orElse(false))
                 r.append(" (").append(stats.get("natural armor bonus").getIntValue()).append(")");
-            r.append(",");
-            r.append(" touch ").append(stats.get("touch armor class").getIntValue());
-            r.append(",");
-            r.append(" flat-footed ").append(stats.get("flat-footed armor class").getIntValue());
-            r.append(",");
-            r.append(" CMD ").append(stats.get("combat maneuvers defense").getIntValue());
-            r.append(";");
-            if (stats.get("base attack bonus").val01().isPresent()) {
-                r.append(" Base Atk ").append(withSign(
-                        stats.get("base attack bonus").getIntValue()
-                        + stats.get("epic base attack bonus").val01().map(x -> x.getIntValue()).orElse(0)));
-                r.append(",");
-            }
-            r.append(" CMB ").append(withSign(stats.get("combat maneuvers bonus").getIntValue()));
-            r.append(";");
-            r.append(" Full Atk ").append(stats.get("attack routine").getStringValue());
-            r.append(";");
-            r.append(" Space/Reach ");
+            r.append(", touch ").append(stats.get("touch armor class").getIntValue());
+            r.append(", flat-footed ").append(stats.get("flat-footed armor class").getIntValue());
+            r.append(", CMD ").append(stats.get("combat maneuvers defense").getIntValue());
+            r.append("; Base Atk ");
+            r.append(withSign(
+                    stats.get("base attack bonus").getIntValue()
+                    + stats.get("epic base attack bonus").val01().map(x -> x.getIntValue()).orElse(0)));
+            r.append(", CMB ").append(withSign(stats.get("combat maneuvers bonus").getIntValue()));
+            r.append("; Full Atk ").append(stats.get("attack routine").getStringValue());
+            r.append("; Space/Reach ");
             r.append(stats.get("space").getStringValue());
             r.append("/");
             r.append(stats.get("reach").getStringValue());
-            r.append(";");
-            r.append(" SA ");
+            r.append("; SA ");
             
             final List<String> specialAbilitiesShort = new ArrayList<>();
-            specialAbilitiesShort.addAll(stats.get("special abilities short").getValues().stream().map(x -> x.getStringValue()).toList());
-            specialAbilitiesShort.addAll(stats.get("senses").getValues().stream().map(x -> x.getStringValue()).toList());
+            stats.get("power resistance").val01().ifPresent(x -> specialAbilitiesShort.add("PR " + x.getIntValue()));
+            stats.get("spell resistance").val01().ifPresent(x -> specialAbilitiesShort.add("SR " + x.getIntValue()));
             specialAbilitiesShort.addAll(stats.get("defensive abilities").getValues().stream().map(x -> x.getStringValue()).toList());
-            if (stats.get("immunities").getValues().size() > 0) {
-                specialAbilitiesShort.add("immune (" 
-                        + stats.get("immunities").getValues().stream().map(x -> x.getStringValue()).collect(Collectors.joining(", "))
-                        + ")");
-            }
-            if (stats.get("resistances").getValues().size() > 0) {
-                specialAbilitiesShort.add("resist (" 
-                        + stats.get("resistances").getValues().stream().map(x -> x.getStringValue()).collect(Collectors.joining(", "))
-                        + ")");
-            }
-            if (stats.get("weaknesses").getValues().size() > 0) {
-                specialAbilitiesShort.add("weak (" 
-                        + stats.get("weaknesses").getValues().stream().map(x -> x.getStringValue()).collect(Collectors.joining(", "))
-                        + ")");
-            }
+            specialAbilitiesShort.addAll(stats.get("senses").getValues().stream().map(x -> x.getStringValue()).toList());
+            specialAbilitiesShort.addAll(stats.get("special abilities short").getValues().stream().map(x -> x.getStringValue()).toList());
+            join(stats.get("immunities")).ifPresent(x -> r.append("immune (").append(x.getStringValue()).append(")"));
+            join(stats.get("resistances")).ifPresent(x -> r.append("resist (").append(x.getStringValue()).append(")"));
+            join(stats.get("weaknesses")).ifPresent(x -> r.append("weaknesses (").append(x.getStringValue()).append(")"));
             Collections.sort(specialAbilitiesShort);
             r.append(specialAbilitiesShort.stream().collect(Collectors.joining(", ")));
             
@@ -166,20 +152,138 @@ public class StatBlocks extends BaseBuilder {
             r.append("<br/>");
             
             r.append("    <i>skills and feats:</i> ");
-            r.append(stats.get("trained skills2").getStringValue());
+            r.append(stats.get("relevant skills").getValues().stream().map(x -> x.getStringValue()).collect(Collectors.joining(", ")));
             r.append("; ");
-            r.append(stats.get("feats2").getStringValue());
+            r.append(stats.get("feats").getValues().stream().map(x -> x.getStringValue()).collect(Collectors.joining(", ")));
             r.append(".");
             
             final List<String> specialAbilitiesLong = new ArrayList<>();
             specialAbilitiesLong.addAll(stats.get("special abilities long").getValues().stream().map(x -> x.getStringValue()).toList());
-            stats.get("equipment2").val01().ifPresent(x -> specialAbilitiesLong.add("<b>equipment:</b> " + x.getStringValue()));
+            join(stats.get("equipment")).ifPresent(x -> specialAbilitiesLong.add("<b>equipment:</b> " + x.getStringValue()));
             if (specialAbilitiesLong.size() > 0) {
                 r.append("<br/>    ");
                 r.append(specialAbilitiesLong.stream().collect(Collectors.joining("<br/>    ")));
             }
             
             return new Value(r.toString());
+        });
+    }
+    
+    private void statBlockPFSRD() {
+        agg("stat block PFSRD", leaf);
+        input("stat block PFSRD", inputStatNames, stats -> {
+            final StringBuilder r = new StringBuilder();
+            
+            //TODO class levels
+            
+            r.append("<b>");
+            r.append(stats.get("name").getStringValue());
+            r.append(" (CR " + stats.get("challenge rating").getIntValue() + ")");
+            r.append("</b>");
+            r.append("<br/>");
+            
+            stats.get("alignment").val01().ifPresent(v -> r.append(v.getStringValue()));
+            r.append(" ");
+            r.append(stats.get("size").getStringValue());
+            stats.get("templates").val01().ifPresent(v -> r.append(" ").append(v.getStringValue()));
+            stats.get("creature type").val01().ifPresent(v -> r.append(" ").append(v.getStringValue()));
+            join(stats.get("creature subtypes")).ifPresent(x -> r.append(" (").append(x.getStringValue()).append(")"));
+            r.append("<br/>");
+            
+            r.append("<b>Init</b> ").append(withSign(stats.get("initiative").getIntValue()));
+            join(stats.get("senses")).ifPresent(x -> r.append("; <b>Senses</b> ").append(x.getStringValue()));
+            join(stats.get("auras")).ifPresent(x -> r.append("; <b>Aura</b> ").append(x.getStringValue()));
+            r.append("<br/>");
+            
+            r.append("<span style=\"color: blue;\"><i>DEFENSE</i></span>");
+            r.append("<br/>");
+            
+            r.append("<b>AC</b> ").append(stats.get("armor class").getIntValue());
+            r.append(",");
+            r.append(" touch ").append(stats.get("touch armor class").getIntValue());
+            r.append(",");
+            r.append(" flat-footed ").append(stats.get("flat-footed armor class").getIntValue());
+            r.append(" (");
+            r.append(stats.get("armor class").val1().source);
+            r.append(")");
+            r.append("<br/>");
+            
+            r.append("<b>hp</b> ").append(stats.get("hit points").getIntValue());
+            r.append(" (").append(stats.get("hit dice").getStringValue()).append(")");
+            r.append("<br/>");
+
+            r.append("<b>Fort</b> ").append(withSign(stats.get("fortitude").getIntValue()));
+            r.append(",");
+            r.append(" <b>Ref</b> ").append(withSign(stats.get("reflex").getIntValue()));
+            r.append(",");
+            r.append(" <b>Will</b> ").append(withSign(stats.get("will").getIntValue()));
+            r.append("<br/>");
+            
+            final StringBuilder defenses = new StringBuilder();
+            join(stats.get("defensive abilities")).ifPresent(x -> defenses.append("; <b>Defensive Abilities</b> ").append(x.getStringValue()));
+            stats.get("damage reduction").val01().ifPresent(x -> defenses.append("; <b>DR</b> ").append(x.getStringValue()));
+            join(stats.get("immunities")).ifPresent(x -> defenses.append("; <b>Immune</b> ").append(x.getStringValue()));
+            stats.get("power resistance").val01().ifPresent(x -> defenses.append("; <b>PR</b> " + x.getIntValue()));
+            join(stats.get("resistances")).ifPresent(x -> defenses.append("; <b>Resist</b> ").append(x.getStringValue()));
+            stats.get("spell resistance").val01().ifPresent(x -> defenses.append("; <b>SR</b> " + x.getIntValue()));
+            if ( ! defenses.isEmpty()) {
+                r.append(defenses.toString().substring(2));
+                r.append("<br/>");
+            }
+            
+            join(stats.get("weaknesses")).ifPresent(x -> r.append("; <b>Weaknessesk</b> ").append(x.getStringValue()).append("<br/>"));
+            
+            r.append("<span style=\"color: blue;\"><i>OFFENSE</i></span>");
+            r.append("<br/>");
+            
+            join(stats.get("speeds")).ifPresent(x -> r.append("<b>Spd</b> ").append(x.getStringValue()));
+            r.append("<br/>");
+            
+            r.append("<b>Full Atk</b> ").append(stats.get("attack routine").getStringValue());
+            r.append("<br/>");
+            
+            r.append("<b>Space</b> ").append(stats.get("space").getStringValue());
+            r.append("; <b>Reach</b> ").append(stats.get("reach").getStringValue());
+            r.append("<br/>");
+            
+            join(stats.get("special abilities short")).ifPresent(x -> r.append("<b>Special Abilities</b> ").append(x.getStringValue()).append("<br/>"));
+            
+            //TODO SLAs
+            
+            //TODO spells
+            
+            r.append("<span style=\"color: blue;\"><i>STATISTICS</i></span>");
+            r.append("<br/>");
+            
+            r.append("<b>Str</b> ").append(stats.get("strength").getIntValue());
+            r.append(", <b>Dex</b> ").append(stats.get("dexterity").getIntValue());
+            r.append(", <b>Con</b> ").append(stats.get("constitution").getIntValue());
+            r.append(", <b>Int</b> ").append(stats.get("intelligence").getIntValue());
+            r.append(", <b>Wis</b> ").append(stats.get("wisdom").getIntValue());
+            r.append(", <b>Cha</b> ").append(stats.get("charisma").getIntValue());
+            r.append("<br/>");
+            
+            r.append("<b>Base Atk</b> ").append(withSign(
+                    stats.get("base attack bonus").getIntValue()
+                    + stats.get("epic base attack bonus").val01().map(x -> x.getIntValue()).orElse(0)));
+            r.append("; CMB ").append(withSign(stats.get("combat maneuvers bonus").getIntValue()));
+            r.append("; CMD ").append(stats.get("combat maneuvers defense").getIntValue());
+            r.append("<br/>");
+            
+            join(stats.get("feats")).ifPresent(x -> r.append("<b>Feats</b> ").append(x.getStringValue()).append("<br/>"));
+            join(stats.get("relevant skills")).ifPresent(x -> r.append("<b>Skills</b> ").append(x.getStringValue()).append("<br/>"));
+            join(stats.get("languages")).ifPresent(x -> r.append("<b>Languages</b> ").append(x.getStringValue()).append("<br/>"));
+            join(stats.get("equipment")).ifPresent(x -> r.append("<b>Equipment</b> ").append(x.getStringValue()).append("<br/>"));
+
+            join(stats.get("special abilities long")).ifPresent(x -> {
+                r.append("<span style=\"color: blue;\"><i>SPECIAL ABILITIES</i></span>");
+                r.append("<br/>");
+                r.append(x.getStringValue());
+                r.append("<br/>");
+            });
+            
+            final String r2 = r.toString();
+            return new Value(r2.substring(0, r2.length() - 5));
         });
     }
 
