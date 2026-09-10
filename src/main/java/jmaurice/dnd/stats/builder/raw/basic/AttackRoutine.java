@@ -28,8 +28,9 @@ public class AttackRoutine extends BaseBuilder {
     }
     
     private void combatManeuversBonus() {
-        agg("base attack bonus", rootleaf, values -> sumAsDoubles(values).floor()); //sumAsDoubles to support partial base attack bonus multiclassing
-        agg("epic base attack bonus", rootleaf, values -> sumAsDoubles(values).floor()); //sumAsDoubles to support partial base attack bonus multiclassing
+        agg("base attack bonus", values -> sumAsDoubles(values).floor()); //sumAsDoubles to support partial base attack bonus multiclassing
+        agg("epic base attack bonus", root, values -> sumAsDoubles(values).floor()); //sumAsDoubles to support partial base attack bonus multiclassing
+        to1("base attack bonus", "default", new Value(0));
         agg("combat maneuvers bonus", values -> withSign(sumAsInts(values)));
         to1("combat maneuvers bonus", "default", new Value(0));
         to1("combat maneuvers bonus", "base attack bonus", value -> value.source("base attack bonus"));
@@ -46,7 +47,7 @@ public class AttackRoutine extends BaseBuilder {
         aggN("global range attack modifiers", rootleaf, values -> values);
         
         aggN("weapon properties", values -> values);
-        agg("attack routine", rootleaf, values -> join(values, ", "));
+        agg("attack routine", rootleaf, values -> join(values, ", ").orElse(null));
         aggN("weapon names", rootleaf, values -> values);
         agg("using unarmed strikes", root);
         agg("using manufactured weapons", root);
@@ -62,7 +63,8 @@ public class AttackRoutine extends BaseBuilder {
         weaponIds.forEach(weaponId -> parseWeaponPropertiesPostStats.add("weapon " + weaponId + " properties"));
         final List<String> parseWeaponPropertiesOtherInputs = new ArrayList<>();
         parseWeaponPropertiesOtherInputs.add("weapon properties");
-        stats.post("parse weapon properties", parseWeaponPropertiesPostStats, parseWeaponPropertiesOtherInputs, (stats, readOnlyStats) -> {
+        agg("parse weapon properties", leaf);
+        stats.postAggX("parse weapon properties", parseWeaponPropertiesPostStats, parseWeaponPropertiesOtherInputs, (stats, readOnlyStats) -> {
             final List<Value> allWeaponProperties = readOnlyStats.get("weapon properties").getValues();
             if (allWeaponProperties.isEmpty())
                 return;
@@ -151,7 +153,6 @@ public class AttackRoutine extends BaseBuilder {
 
         weaponIds.forEach(weaponId -> {
             final List<String> postStatNames = new ArrayList<>();
-            postStatNames.add("weapon " + weaponId + " attack routine");
             postStatNames.add("weapon " + weaponId + " attack modifiers");
             postStatNames.add("weapon " + weaponId + " damage modifiers");
             postStatNames.add("high melee attack bonus");
@@ -176,7 +177,7 @@ public class AttackRoutine extends BaseBuilder {
             otherInputStatNames.add("global attack modifiers");
             otherInputStatNames.add("global melee attack modifiers");
             otherInputStatNames.add("global range attack modifiers");
-            stats.post("generate weapon " + weaponId + " attack routine", postStatNames, otherInputStatNames, (stats, readOnlyStats) -> {
+            stats.postAggX("weapon " + weaponId + " attack routine", postStatNames, otherInputStatNames, (stats, readOnlyStats) -> {
                 final List<Value> propsList = readOnlyStats.get("weapon " + weaponId + " properties").getValues();
                 if (propsList.isEmpty())
                     return;
@@ -241,6 +242,7 @@ public class AttackRoutine extends BaseBuilder {
                 final boolean secondaryNatural = secondaryNaturalOverride || (natural && (usingUnarmedStrikes || usingManufacturedWeapons));
                 final boolean inTwoHands = props.remove("in two hands") != null;
                 final boolean inOffHand = props.remove("in off-hand") != null;
+                final boolean swarm = props.remove("swarm") != null;
                 final Integer criticalThreatRange = val01(props.remove("critical threat range")).map(x -> Integer.parseInt(x)).orElse(null);
                 final Integer criticalThreatMultiplier = val01(props.remove("critical threat multiplier")).map(x -> Integer.parseInt(x)).orElse(null);
                 final boolean weaponImprovedCritical = props.remove("improved critical") != null;
@@ -270,6 +272,7 @@ public class AttackRoutine extends BaseBuilder {
                         case "huge"       -> 7;
                         case "gargantuan" -> 8;
                         case "colossal"   -> 9;
+                        case "colossal-plus" -> 10;
                         default -> throw new RuntimeException("unrecognized size value >>" + size + "<<");
                     };
                 }
@@ -277,53 +280,55 @@ public class AttackRoutine extends BaseBuilder {
                 //
                 
                 List<Value> attackModifiers = new ArrayList<>();
-                if (baseAttackBonus != null)
-                    attackModifiers.add(new Value(baseAttackBonus, "base attack bonus"));
-                if (epicBaseAttackBonus != null)
-                    attackModifiers.add(new Value(epicBaseAttackBonus, "epic base attack bonus"));
-                if (sizeModifierToAttack != null)
-                    attackModifiers.add(new Value(sizeModifierToAttack, "size"));
-                if (secondaryNatural) {
-                    if (multiattack) {
-                        attackModifiers.add(new Value(-2, "multiattack secondary natural weapon"));
+                if ( ! swarm) {
+                    if (baseAttackBonus != null)
+                        attackModifiers.add(new Value(baseAttackBonus, "base attack bonus"));
+                    if (epicBaseAttackBonus != null)
+                        attackModifiers.add(new Value(epicBaseAttackBonus, "epic base attack bonus"));
+                    if (sizeModifierToAttack != null)
+                        attackModifiers.add(new Value(sizeModifierToAttack, "size"));
+                    if (secondaryNatural) {
+                        if (multiattack) {
+                            attackModifiers.add(new Value(-2, "multiattack secondary natural weapon"));
+                        } else {
+                            attackModifiers.add(new Value(-5, "secondary natural weapon"));
+                        }
+                    }
+                    if (melee && weaponFinesse && finessable && dexterityModifier != null) {
+                        if (strengthModifier == null) {
+                            attackModifiers.add(new Value(dexterityModifier, "finessable dexterity"));
+                        } else if (strengthModifier < dexterityModifier) {
+                            attackModifiers.add(new Value(dexterityModifier, "finessable dexterity"));
+                        } else {
+                            attackModifiers.add(new Value(strengthModifier, "finessable strength"));
+                        }
+                    } else if (melee && incorporeal) {
+                        attackModifiers.add(new Value(dexterityModifier, "incorporeal melee dexterity"));
+                    } else if (range) {
+                        attackModifiers.add(new Value(dexterityModifier, "range dexterity"));
+                    } else if (thrown) {
+                        attackModifiers.add(new Value(dexterityModifier, "thrown dexterity"));
+                    } else if (melee) {
+                        attackModifiers.add(new Value(strengthModifier, "default melee strength"));
                     } else {
-                        attackModifiers.add(new Value(-5, "secondary natural weapon"));
+                        throw new RuntimeException("don't know what ability score modifier to use for attack for weapon: " + weaponName);
                     }
-                }
-                if (melee && weaponFinesse && finessable && dexterityModifier != null) {
-                    if (strengthModifier == null) {
-                        attackModifiers.add(new Value(dexterityModifier, "finessable dexterity"));
-                    } else if (strengthModifier < dexterityModifier) {
-                        attackModifiers.add(new Value(dexterityModifier, "finessable dexterity"));
-                    } else {
-                        attackModifiers.add(new Value(strengthModifier, "finessable strength"));
+                    if (weaponMiscAttackModifiers != null) {
+                        for (final String x : weaponMiscAttackModifiers) {
+                            attackModifiers.add(new Value(Integer.parseInt(x)));
+                        }
                     }
-                } else if (melee && incorporeal) {
-                    attackModifiers.add(new Value(dexterityModifier, "incorporeal melee dexterity"));
-                } else if (range) {
-                    attackModifiers.add(new Value(dexterityModifier, "range dexterity"));
-                } else if (thrown) {
-                    attackModifiers.add(new Value(dexterityModifier, "thrown dexterity"));
-                } else if (melee) {
-                    attackModifiers.add(new Value(strengthModifier, "default melee strength"));
-                } else {
-                    throw new RuntimeException("don't know what ability score modifier to use for attack for weapon: " + weaponName);
-                }
-                if (weaponMiscAttackModifiers != null) {
-                    for (final String x : weaponMiscAttackModifiers) {
-                        attackModifiers.add(new Value(Integer.parseInt(x)));
+                    if (globalAttackModifiers != null) {
+                        attackModifiers.addAll(globalAttackModifiers);
                     }
+                    if (globalMeleeAttackModifiers != null && melee) {
+                        attackModifiers.addAll(globalMeleeAttackModifiers);
+                    }
+                    if (globalRangeAttackModifiers != null && range) {
+                        attackModifiers.addAll(globalRangeAttackModifiers);
+                    }
+                    attackModifiersStat.setValues(attackModifiers);
                 }
-                if (globalAttackModifiers != null) {
-                    attackModifiers.addAll(globalAttackModifiers);
-                }
-                if (globalMeleeAttackModifiers != null && melee) {
-                    attackModifiers.addAll(globalMeleeAttackModifiers);
-                }
-                if (globalRangeAttackModifiers != null && range) {
-                    attackModifiers.addAll(globalRangeAttackModifiers);
-                }
-                attackModifiersStat.setValues(attackModifiers);
                 
                 //
                 
@@ -331,15 +336,19 @@ public class AttackRoutine extends BaseBuilder {
                 if ((baseDamage == null && natural) || (baseDamage != null && baseDamage.equals("natural"))) {
                     final int sizeRating2 = sizeRating + naturalWeaponDamageSizeModifier;
                     baseDamage = switch (sizeRating2) {
-                        case 1 -> "1";
-                        case 2 -> "1d2";
-                        case 3 -> "1d3";
-                        case 4 -> "1d4";
-                        case 5 -> "1d6";
-                        case 6 -> "1d8";
-                        case 7 -> "2d6";
-                        case 8 -> "2d8";
-                        case 9 -> "4d6";
+                        // https://www.d20pfsrd.com/feats/monster-feats/improved-natural-attack/
+                        case  1 ->  "1";   // 1
+                        case  2 ->  "1d2"; // 1.5
+                        case  3 ->  "1d3"; // 2
+                        case  4 ->  "1d4"; // 2.5
+                        case  5 ->  "1d6"; // 3.5
+                        case  6 ->  "1d8"; // 4.5
+                        case  7 ->  "2d6"; // 7
+                        case  8 ->  "2d8"; // 9
+                        case  9 ->  "4d6"; //14
+                        case 10 ->  "6d6"; //21
+                        case 11 ->  "8d6"; //28
+                        case 12 -> "12d6"; //42
                         default -> throw new RuntimeException(
                                 "cannot determine base damage for natural weapon " + name
                                 + " with creature size " + size 
@@ -411,7 +420,10 @@ public class AttackRoutine extends BaseBuilder {
                 
                 int numAttacks = 0;
                 final StringBuilder attackRoutine = new StringBuilder();
-                if (numWeaponsOfSameName != 1 && ! iterative5) {
+                if (swarm) {
+                    attackRoutine.append(name);
+                    numAttacks++;
+                } else if (numWeaponsOfSameName != 1 && ! iterative5) {
                     attackRoutine.append(numWeaponsOfSameName);
                     attackRoutine.append(" ");
                     attackRoutine.append(name);
@@ -466,11 +478,11 @@ public class AttackRoutine extends BaseBuilder {
                 
                 //
                 final ValuedStat averageDamageStat;
-                if (melee)
+                if (melee || swarm)
                     averageDamageStat = averageMeleeDamage;
                 else if (range)
                     averageDamageStat = averageRangeDamage;
-                else
+                else   
                     throw new RuntimeException();
                 final Matcher baseDamageMatcher = Pattern.compile("^([0-9]+)(?:d([0-9]+))?$").matcher(baseDamage);
                 if ( ! baseDamageMatcher.matches())
@@ -484,7 +496,7 @@ public class AttackRoutine extends BaseBuilder {
                 
                 //
                 final ValuedStat highAttackBonusStat;
-                if (melee)
+                if (melee || swarm)
                     highAttackBonusStat = highMeleeAttackBonus;
                 else if (range)
                     highAttackBonusStat = highRangeAttackBonus;
@@ -497,7 +509,7 @@ public class AttackRoutine extends BaseBuilder {
         });
             
         final List<String> individualAttackRoutineNames = weaponIds.stream().map(x -> "weapon " + x + " attack routine").toList();
-        stats.post("generate attack routine", Arrays.asList("attack routine"), individualAttackRoutineNames, (writeableStats, readOnlyStats) -> {
+        stats.postAgg("attack routine", individualAttackRoutineNames, (writeableStats, readOnlyStats) -> {
             final List<ReadOnlyValuedStat> individualAttackRoutines = weaponIds.stream().map(x -> readOnlyStats.get("weapon " + x + " attack routine")).toList();
             final StringBuilder fullAttackRoutine = new StringBuilder();
             for (final ReadOnlyValuedStat individualAttackRoutine : individualAttackRoutines) {
