@@ -1,6 +1,7 @@
 package jmaurice.dnd.stats.builder.raw.basic;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -16,10 +17,10 @@ public class HitDiceHitPoints extends BaseBuilder {
         agg("hit dice", leaf, values -> {
             final Map<Integer, Integer> aggregated = new TreeMap<>();
             values.forEach(x -> {
-                aggregated.compute(x.regexExtract("^([0-9]+)d[0-9]+$").getIntValue(), (Integer k, Integer v) -> {
+                aggregated.compute(x.regexExtract("^[0-9]+d([0-9]+)$").getIntValue(), (Integer k, Integer v) -> {
                     if (v == null)
                         v = 0;
-                    v += x.regexExtract("^[0-9]+d([0-9]+)$").getIntValue();
+                    v += x.regexExtract("^([0-9]+)d[0-9]+$").getIntValue();
                     return v;
                 });
             });
@@ -27,9 +28,9 @@ public class HitDiceHitPoints extends BaseBuilder {
             for (final Map.Entry<Integer, Integer> x : aggregated.entrySet()) {
                 if ( ! v.isEmpty())
                     v.append("+");
-                v.append(x.getKey());
-                v.append("d");
                 v.append(x.getValue());
+                v.append("d");
+                v.append(x.getKey());
             }
             return new Value(v.toString());
         });
@@ -51,10 +52,10 @@ public class HitDiceHitPoints extends BaseBuilder {
             return new Value(numHitDice * constitutionModifier, "con");
         });
         toN("hit points", "hit dice", value -> {
-            return val01(value).stream()
+            return Collections.singletonList(sumAsInts(val01(value).stream()
                     .flatMap(x -> x.split("\\+").stream())
                     .map(x -> x.regexExtract("^([0-9]+)d[0-9]+$").mult((x.regexExtract("^[0-9]+d([0-9]+)$").getIntValue() + 1.0) * 0.5))
-                    .toList();
+                    .toList()).source("hit dice"));
         });
     }
 
