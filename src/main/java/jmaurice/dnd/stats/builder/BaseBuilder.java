@@ -340,11 +340,13 @@ public class BaseBuilder {
             if (skipZero && valueInt == 0)
                 continue;
             sum += valueInt;
-            if ( ! source.isEmpty())
-                source.append(", ");
-            source.append(valueInt);
-            if (value.source != null && ! value.source.equals("default"))
-                source.append(" ").append(value.source);
+            if (value.source == null || ! value.source.equals("default")) {
+                if ( ! source.isEmpty())
+                    source.append(", ");
+                source.append(valueInt);
+                if (value.source != null)
+                    source.append(" ").append(value.source);
+            }
         }
         return new Value(sum, source.isEmpty() ? null : source.toString());
     }
