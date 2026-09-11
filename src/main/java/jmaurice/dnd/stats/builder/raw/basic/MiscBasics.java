@@ -25,6 +25,7 @@ public class MiscBasics extends BaseBuilder {
         to1("initiative", "default", new Value(0));
         
         aggN("languages", root, values -> sort(values));
+        agg("mythic rank", root);
         agg("name", root);
         agg("psionic manifester level", values -> sumAsInts(values));
         agg("race", root);
