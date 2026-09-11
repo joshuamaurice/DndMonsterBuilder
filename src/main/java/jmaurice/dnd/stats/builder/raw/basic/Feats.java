@@ -11,8 +11,13 @@ public class Feats extends BaseBuilder {
     public Feats(final Stats stats) { super(stats); }
 
     public void build() {
-        toN("feats", "feat", root, values -> values);
+        aggN("feat", root, values -> values);
+        toN("feats", "feat", values -> values);
         aggN("feats", values -> sort(values));
+        
+        aggN("epic feat", root, values -> values);
+        toN("epic feats", "epic feat", values -> values);
+        aggN("epic feats", values -> sort(values));
         
         to1("feats", "critical focus", root, new Value("critical focus"));
         to1("feats", "crowded charge", root, new Value("crowded charge"));
