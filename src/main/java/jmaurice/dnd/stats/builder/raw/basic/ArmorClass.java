@@ -12,12 +12,12 @@ public class ArmorClass extends BaseBuilder {
     public ArmorClass(final Stats stats) { super(stats); }
 
     public void build() {
-        agg("armor class",                          leaf, values -> sumAsInts(values, SkipZero));
-        agg("touch armor class",                    leaf, values -> sumAsInts(values, SkipZero));
-        agg("combat maneuvers defense",             leaf, values -> sumAsInts(values, SkipZero));
-        agg("flat-footed armor class",              leaf, values -> sumAsInts(values, SkipZero));
-        agg("flat-footed touch armor class",        leaf, values -> sumAsInts(values, SkipZero));
-        agg("flat-footed combat maneuvers defense", leaf, values -> sumAsInts(values, SkipZero));
+        agg("armor class",                          leaf, values -> sumAsInts(sort(values), SkipZero));
+        agg("touch armor class",                    leaf, values -> sumAsInts(sort(values), SkipZero));
+        agg("combat maneuvers defense",             leaf, values -> sumAsInts(sort(values), SkipZero));
+        agg("flat-footed armor class",              leaf, values -> sumAsInts(sort(values), SkipZero));
+        agg("flat-footed touch armor class",        leaf, values -> sumAsInts(sort(values), SkipZero));
+        agg("flat-footed combat maneuvers defense", leaf, values -> sumAsInts(sort(values), SkipZero));
         
         to1("armor class",                          "default", new Value(10));
         to1("touch armor class",                    "default", new Value(10));
@@ -48,18 +48,30 @@ public class ArmorClass extends BaseBuilder {
         to1("flat-footed touch armor class",        "dexterity penalty", value -> value.getIntValue() < 0 ? value.source("dex") : null);
         to1("flat-footed combat maneuvers defense", "dexterity penalty", value -> value.getIntValue() < 0 ? value.source("dex") : null);
         
-        agg("natural armor bonus", leaf, values -> sumAsInts(values));
-        to1("armor class",                          "natural armor bonus", value -> value.source("natural"));
-        to1("flat-footed armor class",              "natural armor bonus", value -> value.source("natural"));
+        armorShieldNaturalArmor();
+        otherBonuses();
+    }
+    
+    private void armorShieldNaturalArmor() {
+        final List<String> bonusTypes = Arrays.asList("armor bonus to armor class", "shield bonus to armor class", "natural armor bonus");
+        bonusTypes.forEach(type -> agg(type, root, values -> sumAsInts(values))); //TODO no stacking
+        bonusTypes.forEach(type -> to1("armor class",             type, value -> value.source(type)));
+        bonusTypes.forEach(type -> to1("flat-footed armor class", type, value -> value.source(type)));
+    }
+    
+    private void otherBonuses() {
+        final List<String> bonusTypes = Arrays.asList("deflection", "dodge", "luck", "divine", "profane", "sacred");
+        final List<String> noStackBonusTypes = Arrays.asList("deflection", "luck", "divine", "profane", "sacred");
         
-        final List<String> types = Arrays.asList("deflection", "luck", "divine", "profane", "sacred");
-        types.forEach(type -> agg(type + " bonus to armor class", root, values -> maxAsInts(values)));
-        types.forEach(type -> to1("armor class",                          type + " bonus to armor class", value -> value.source(type)));
-        types.forEach(type -> to1("touch armor class",                    type + " bonus to armor class", value -> value.source(type)));
-        types.forEach(type -> to1("combat maneuvers defense",             type + " bonus to armor class", value -> value.source(type)));
-        types.forEach(type -> to1("flat-footed armor class",              type + " bonus to armor class", value -> value.source(type)));
-        types.forEach(type -> to1("flat-footed touch armor class",        type + " bonus to armor class", value -> value.source(type)));
-        types.forEach(type -> to1("flat-footed combat maneuvers defense", type + " bonus to armor class", value -> value.source(type)));
+        noStackBonusTypes.forEach(type -> agg(type + " bonus to armor class", root, values -> maxAsInts(values)));
+        agg("dodge bonus to armor class", root, values -> sumAsInts(values));
+        
+        bonusTypes.forEach(type -> to1("armor class",                          type + " bonus to armor class", value -> value.source(type)));
+        bonusTypes.forEach(type -> to1("touch armor class",                    type + " bonus to armor class", value -> value.source(type)));
+        bonusTypes.forEach(type -> to1("combat maneuvers defense",             type + " bonus to armor class", value -> value.source(type)));
+        bonusTypes.forEach(type -> to1("flat-footed armor class",              type + " bonus to armor class", value -> value.source(type)));
+        bonusTypes.forEach(type -> to1("flat-footed touch armor class",        type + " bonus to armor class", value -> value.source(type)));
+        bonusTypes.forEach(type -> to1("flat-footed combat maneuvers defense", type + " bonus to armor class", value -> value.source(type)));
         
     }
 
