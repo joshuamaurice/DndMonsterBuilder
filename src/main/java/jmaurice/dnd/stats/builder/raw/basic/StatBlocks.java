@@ -28,7 +28,9 @@ public class StatBlocks extends BaseBuilder {
             "damage reduction",
             "defensive abilities",
             "dexterity",
+            "divine rank",
             "epic base attack bonus",
+            "epic feats",
             "equipment",
             "feats",
             "flat-footed armor class",
@@ -40,6 +42,7 @@ public class StatBlocks extends BaseBuilder {
             "initiative",
             "intelligence",
             "languages",
+            "mythic rank",
             "name",
             "natural armor bonus",
             "power resistance",
@@ -178,7 +181,10 @@ public class StatBlocks extends BaseBuilder {
             
             r.append("<b>");
             r.append(stats.get("name").getStringValue());
-            r.append(" (CR " + stats.get("challenge rating").getIntValue() + ")");
+            r.append(" (CR " + stats.get("challenge rating").getIntValue());
+            stats.get("divine rank").val01().ifPresent(x -> r.append("/DR " + x.getStringValue()));
+            stats.get("mythic rank").val01().ifPresent(x -> r.append("/MR " + x.getStringValue()));
+            r.append(")");
             r.append("</b>");
             r.append("<br/>");
             
@@ -191,6 +197,9 @@ public class StatBlocks extends BaseBuilder {
             r.append("<br/>");
             
             r.append("<b>Init</b> ").append(withSign(stats.get("initiative").getIntValue()));
+            r.append(" (");
+            r.append(stats.get("initiative").val1().source);
+            r.append(")");
             join(stats.get("senses")).ifPresent(x -> r.append("; <b>Senses</b> ").append(x.getStringValue()));
             join(stats.get("auras")).ifPresent(x -> r.append("; <b>Aura</b> ").append(x.getStringValue()));
             r.append("<br/>");
@@ -219,15 +228,21 @@ public class StatBlocks extends BaseBuilder {
             r.append(" <b>Will</b> ").append(withSign(stats.get("will").getIntValue()));
             r.append("<br/>");
             
-            final StringBuilder defenses = new StringBuilder();
-            join(stats.get("defensive abilities")).ifPresent(x -> defenses.append("; <b>Defensive Abilities</b> ").append(x.getStringValue()));
-            stats.get("damage reduction").val01().ifPresent(x -> defenses.append("; <b>DR</b> ").append(x.getStringValue()));
-            join(stats.get("immunities")).ifPresent(x -> defenses.append("; <b>Immune</b> ").append(x.getStringValue()));
-            stats.get("power resistance").val01().ifPresent(x -> defenses.append("; <b>PR</b> " + x.getIntValue()));
-            join(stats.get("resistances")).ifPresent(x -> defenses.append("; <b>Resist</b> ").append(x.getStringValue()));
-            stats.get("spell resistance").val01().ifPresent(x -> defenses.append("; <b>SR</b> " + x.getIntValue()));
-            if ( ! defenses.isEmpty()) {
-                r.append(defenses.toString().substring(2));
+            final StringBuilder defenses1 = new StringBuilder();
+            join(stats.get("damage reduction")).ifPresent(x -> defenses1.append("; <b>DR</b> ").append(x.getStringValue()));
+            stats.get("power resistance").val01().ifPresent(x -> defenses1.append("; <b>PR</b> " + x.getIntValue()));
+            stats.get("spell resistance").val01().ifPresent(x -> defenses1.append("; <b>SR</b> " + x.getIntValue()));
+            if ( ! defenses1.isEmpty()) {
+                r.append(defenses1.toString().substring(2));
+                r.append("<br/>");
+            }
+            
+            final StringBuilder defenses2 = new StringBuilder();
+            join(stats.get("defensive abilities")).ifPresent(x -> defenses2.append("; <b>Defensive Abilities</b> ").append(x.getStringValue()));
+            join(stats.get("immunities")).ifPresent(x -> defenses2.append("; <b>Immune</b> ").append(x.getStringValue()));
+            join(stats.get("resistances")).ifPresent(x -> defenses2.append("; <b>Resist</b> ").append(x.getStringValue()));
+            if ( ! defenses2.isEmpty()) {
+                r.append(defenses2.toString().substring(2));
                 r.append("<br/>");
             }
             
@@ -236,11 +251,9 @@ public class StatBlocks extends BaseBuilder {
             r.append("<span style=\"color: blue;\"><i>OFFENSE</i></span>");
             r.append("<br/>");
             
-            join(stats.get("speeds")).ifPresent(x -> r.append("<b>Spd</b> ").append(x.getStringValue()));
-            r.append("<br/>");
+            join(stats.get("speeds")).ifPresent(x -> r.append("<b>Spd</b> ").append(x.getStringValue()).append("<br/>"));
             
-            r.append("<b>Full Atk</b> ").append(stats.get("attack routine").getStringValue());
-            r.append("<br/>");
+            join(stats.get("attack routine")).ifPresent(x -> r.append("<b>Full Atk</b> ").append(x.getStringValue()).append("<br/>"));
             
             r.append("<b>Space</b> ").append(stats.get("space").getStringValue());
             r.append("; <b>Reach</b> ").append(stats.get("reach").getStringValue());
@@ -266,11 +279,12 @@ public class StatBlocks extends BaseBuilder {
             r.append("<b>Base Atk</b> ").append(withSign(
                     stats.get("base attack bonus").getIntValue()
                     + stats.get("epic base attack bonus").val01().map(x -> x.getIntValue()).orElse(0)));
-            r.append("; CMB ").append(withSign(stats.get("combat maneuvers bonus").getIntValue()));
-            r.append("; CMD ").append(stats.get("combat maneuvers defense").getIntValue());
+            r.append("; <b>CMB</b> ").append(withSign(stats.get("combat maneuvers bonus").getIntValue()));
+            r.append("; <b>CMD</b> ").append(stats.get("combat maneuvers defense").getIntValue());
             r.append("<br/>");
             
             join(stats.get("feats")).ifPresent(x -> r.append("<b>Feats</b> ").append(x.getStringValue()).append("<br/>"));
+            join(stats.get("epic feats")).ifPresent(x -> r.append("<b>Epic Feats</b> ").append(x.getStringValue()).append("<br/>"));
             join(stats.get("relevant skills")).ifPresent(x -> r.append("<b>Skills</b> ").append(x.getStringValue()).append("<br/>"));
             join(stats.get("languages")).ifPresent(x -> r.append("<b>Languages</b> ").append(x.getStringValue()).append("<br/>"));
             join(stats.get("equipment")).ifPresent(x -> r.append("<b>Equipment</b> ").append(x.getStringValue()).append("<br/>"));
