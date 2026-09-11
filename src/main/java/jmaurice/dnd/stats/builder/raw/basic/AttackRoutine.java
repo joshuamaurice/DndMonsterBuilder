@@ -502,9 +502,8 @@ public class AttackRoutine extends BaseBuilder {
                     highAttackBonusStat = highRangeAttackBonus;
                 else
                     throw new RuntimeException();
-                final List<Value> highAttackBonusValues = new ArrayList<>(highAttackBonusStat.getValues());
-                highAttackBonusValues.add(new Value(attackModifier, weaponName));
-                highAttackBonusStat.setValues(highAttackBonusValues);
+                if (highAttackBonusStat.getIntValue() == null || highAttackBonusStat.getIntValue() < attackModifier)
+                    highAttackBonusStat.setValues(Collections.singletonList(new Value(attackModifier, weaponName)));
             });
         });
             
