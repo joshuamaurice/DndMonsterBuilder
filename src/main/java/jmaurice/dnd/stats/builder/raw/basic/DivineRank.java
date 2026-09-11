@@ -22,6 +22,8 @@ public class DivineRank extends BaseBuilder {
     }
     
     private void divineRank0() {
+        to1("divine rank 0", "divine rank", value -> value.getIntValue() == 0 ? value : null);
+        
         to1("strength",     "divine rank", new Value(4));
         to1("dexterity",    "divine rank", new Value(4));
         to1("constitution", "divine rank", new Value(4));
@@ -31,7 +33,7 @@ public class DivineRank extends BaseBuilder {
         
         to1("defensive abilities", "divine rank", new Value("divine resistance to mind-affecting effects"));
         to1("defensive abilities", "divine rank", new Value("mythic saving throws"));
-        to1("immunities", "divine rank", new Value("harmful transmutations"));
+        to1("immunities", "divine rank 0", new Value("harmful transmutations", "divine rank"));
         to1("resistances", "divine rank", value -> new Value("fire " + (5 + value.getIntValue())));
         to1("special abilities short", "divine rank", value -> new Value("divine rank " + value.getIntValue()));
         to1("special abilities short", "divine rank", new Value("mythic hard to kill"));
@@ -54,10 +56,10 @@ public class DivineRank extends BaseBuilder {
                     )
                     .floor()
                     .asInt()
-                    .source("divive hit points");
+                    .source("divine hit points");
         });
         
-        to1("special abilities short", "divine rank", new Value("divine reflection"));
+        to1("special abilities short", "divine rank", new Value("divine deflection"));
         input("deflection bonus to armor class", Arrays.asList("divine rank", "charisma bonus"), stats -> {
             if (stats.get("divine rank").getIntValue() == null)
                 return null;
@@ -70,35 +72,60 @@ public class DivineRank extends BaseBuilder {
         
         //usually 20 epic outsider hit dice in addition to existing hit dice
         
-        to1("spell resistance", "divine rank 1+", value -> new Value(value.getIntValue() + 32, "deity"));
+        to1("spell resistance", "divine rank 1+", value -> new Value(value.getIntValue() + 32, "divine rank"));
         to1("immunities", "divine rank 1+", new Value("divine immunities (" + joinS(sortS(Arrays.asList(
-                "paralysis", "sleep", "disease", "poison", "stunning", "ability damage", "energy drain", "death effects", "ability drain"
-                )), ", ").get() + ")", "deity"));
+                "harmful transmutations",
+                "paralysis", "sleep", 
+                "disease", "poison", "stunning", "ability damage", 
+                "energy drain", "death effects", "ability drain"
+                )), ", ").get() + ")", "divine rank"));
         
-        to1("special abilities short", "divine rank 1+", value -> new Value("divine aura (choose " + value.getIntValue() + ")", "deity"));
-        to1("special abilities short", "divine rank 1+", value -> new Value("divine salient divine ability (choose " + value.getIntValue() + ")", "deity"));
+        to1("special abilities short", "divine rank 1+", value -> new Value("divine aura (choose " + value.getIntValue() + ")", "divine rank"));
+        to1("special abilities short", "divine rank 1+", value -> new Value("divine salient divine ability (choose " + value.getIntValue() + ")", "divine rank"));
         
-        to1("special abilities short", "divine rank 1+", new Value("divine automatic actions (2 / round)", "deity"));
-        to1("special abilities short", "divine rank 1+", new Value("divine block sensing", "deity"));
-        to1("special abilities short", "divine rank 1+", new Value("divine communication", "deity"));
-        to1("special abilities short", "divine rank 1+", new Value("divine create magic items", "deity"));
-        to1("special abilities short", "divine rank 1+", new Value("divine domains (choose 5)", "deity"));
-        to1("special abilities short", "divine rank 1+", new Value("divine domain powers", "deity"));
-        to1("special abilities short", "divine rank 1+", new Value("divine domains SLAs (3 / day / splvl)", "deity"));
-        to1("special abilities short", "divine rank 1+", new Value("divine familiar", "deity"));
-        to1("special abilities short", "divine rank 1+", new Value("divine godly realm", "deity"));
-        to1("special abilities short", "divine rank 1+", new Value("divine no botches", "deity"));
-        to1("special abilities short", "divine rank 1+", new Value("divine portfolio", "deity"));
-        to1("special abilities short", "divine rank 1+", new Value("divine portfolio sense", "deity"));
-        to1("special abilities short", "divine rank 1+", new Value("divine remote communication", "deity"));
-        to1("special abilities short", "divine rank 1+", new Value("divine remote sensing", "deity"));
-        to1("special abilities short", "divine rank 1+", new Value("divine senses", "deity"));
-        to1("special abilities short", "divine rank 1+", new Value("divine spontaneous casting", "deity"));
-        to1("special abilities short", "divine rank 1+", new Value("divine travel", "deity"));
+        to1("special abilities short", "divine rank 1+", new Value("divine automatic actions (2 / round)", "divine rank"));
+        to1("special abilities short", "divine rank 1+", new Value("divine block sensing", "divine rank"));
+        to1("special abilities short", "divine rank 1+", new Value("divine communication", "divine rank"));
+        to1("special abilities short", "divine rank 1+", new Value("divine create magic items", "divine rank"));
+        to1("special abilities short", "divine rank 1+", new Value("divine domains (choose 5)", "divine rank"));
+        to1("special abilities short", "divine rank 1+", new Value("divine domain powers", "divine rank"));
+        to1("special abilities short", "divine rank 1+", new Value("divine domains SLAs (3 / day / splvl)", "divine rank"));
+        to1("special abilities short", "divine rank 1+", new Value("divine familiar", "divine rank"));
+        to1("special abilities short", "divine rank 1+", new Value("divine godly realm", "divine rank"));
+        to1("special abilities short", "divine rank 1+", new Value("divine no botches", "divine rank"));
+        to1("special abilities short", "divine rank 1+", new Value("divine portfolio", "divine rank"));
+        to1("special abilities short", "divine rank 1+", new Value("divine portfolio sense", "divine rank"));
+        to1("special abilities short", "divine rank 1+", new Value("divine remote communication", "divine rank"));
+        to1("special abilities short", "divine rank 1+", new Value("divine remote sensing", "divine rank"));
+        to1("special abilities short", "divine rank 1+", new Value("divine senses", "divine rank"));
+        to1("special abilities short", "divine rank 1+", new Value("divine spontaneous casting", "divine rank"));
+        to1("special abilities short", "divine rank 1+", new Value("divine travel", "divine rank"));
 
         to1("initiative", "divine rank 1+", value -> value.source("divine rank"));
         to1("global attack modifiers", "divine rank 1+", value -> value.source("divine rank"));
-        to1("natural armor bonus", "divine rank 1+", value -> value.source("divine rank"));
+        
+        input("divine natural armor", Arrays.asList("incorporeal", "divine rank"), stats -> {
+            if (stats.get("incorporeal").getBooleanValue(false))
+                return null;
+            final Integer divineRank = stats.get("divine rank").getIntValue();
+            if (divineRank == null || divineRank < 1)
+                return null;
+            return new Value(divineRank + 13);
+        });
+        to1("natural armor bonus", "divine natural armor", value -> value.source("divine rank"));
+        to1("special abilities short", "divine natural armor", new Value("divine natural armor", ""));
+        
+        input("divine dodge bonus", Arrays.asList("incorporeal", "divine rank"), stats -> {
+            if ( ! stats.get("incorporeal").getBooleanValue(false))
+                return null;
+            final Integer divineRank = stats.get("divine rank").getIntValue();
+            if (divineRank == null || divineRank < 1)
+                return null;
+            return new Value(divineRank + 7);
+        });
+        to1("dodge bonus to armor class", "divine dodge bonus", value -> value.source("divine rank"));
+        to1("special abilities short", "divine dodge bonus", new Value("divine dodge bonus", ""));
+        
         Skills.allSkills.forEach(skill -> to1(skill, "divine rank 1+", value -> value.source("divine rank")));
         
         to1("armor class",                          "divine rank 1+", value -> value.source("divine rank"));
@@ -192,7 +219,7 @@ public class DivineRank extends BaseBuilder {
                     speedStatValues = speedStatValues.stream()
                             .filter(v -> ! baseSpeedBonusTypes.contains(v.source))
                             .collect(Collectors.toCollection(ArrayList::new));
-                    speedStatValues.add(new Value(divineBaseSpeed, "deity"));
+                    speedStatValues.add(new Value(divineBaseSpeed, "divine rank"));
                     speedStat.setValues(speedStatValues);
                 }
             );
