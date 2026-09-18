@@ -52,7 +52,8 @@ public class Main {
         System.out.println("updateOutputFile: starting");
         final StringBuilder outputStatsListCsvContent = new StringBuilder();
         final StringBuilder outputStatBlockHtmlContent = new StringBuilder();
-        outputStatBlockHtmlContent.append("<p style=\"white-space: pre-wrap;\">");
+        outputStatBlockHtmlContent.append(HtmlHeadStyle);
+        outputStatBlockHtmlContent.append("<p>");
         final Map<String, String> creatureInputs = ParseCreatureInputsFromSheet.read(inputFile, inputFileSheetName);
         for (final Map.Entry<String, String> creatureInput : creatureInputs.entrySet()) {
             final String creatureName = creatureInput.getKey();
@@ -131,5 +132,28 @@ public class Main {
             e = e.getCause();
         return e.getClass().getSimpleName();
     }
+    
+    private static final String HtmlHeadStyle = """
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    * {
+                        white-space: normal;
+                    }
+                    p {
+                        margin-top: 0;
+                        margin-bottom: 0;
+                    }
+                    ul {
+                        margin-top: 0;
+                        margin-bottom: 0;
+                    }
+                    li {
+                        margin-top: 0;
+                        margin-bottom: 0;
+                    }
+                </style>
+            </head>
+            """;
 
 }

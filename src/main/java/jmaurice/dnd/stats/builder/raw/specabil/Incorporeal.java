@@ -11,13 +11,13 @@ public class Incorporeal extends BaseBuilder {
     public Incorporeal(final Stats stats) { super(stats); }
 
     public void build() {
-        agg("incorporeal", root, values -> values.size() >= 1 ? new Value(1) : null);
-        to1("special abilities short", "incorporeal", new Value("incorpoeal"));
-        to1("weapon finesse", "incorporeal", new Value(true));
-        input("deflection bonus to armor class", Arrays.asList("incorporeal", "charisma bonus"), stats -> {
-            if ( ! stats.get("incorporeal").getBooleanValue(false))
+        stat("incorporeal").agg(root, values -> values.size() >= 1 ? new Value(1) : null);
+        stat("incorporeal").to1("special abilities short", new Value("<a href=\"https://www.d20pfsrd.com/BESTIARY/RULES-FOR-MONSTERS/UNIVERSAL-MONSTER-RULES/#incorporeal_ex\">incorporeal</a>"));
+        stat("incorporeal").to1("weapon finesse", new Value(true));
+        input1("armor class bonus", Arrays.asList("incorporeal", "charisma modifier"), stats -> {
+            if (stats.get("incorporeal").getValues().size() == 0)
                 return null;
-            return stats.get("charisma bonus").val01().map(x -> x.asInt().max(1)).orElse(null);
+            return stats.get("charisma modifier").val1().type("deflection").source("incorporeal charisma to deflection");
         });
     }
 

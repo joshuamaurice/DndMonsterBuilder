@@ -10,24 +10,32 @@ import jmaurice.dnd.stats.impl.Stats;
 
 public class AbilityScores extends BaseBuilder {
     
+    public static final List<String> abilityScoreStatNames = Arrays.asList("strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma");
+    
     public AbilityScores(final Stats stats) { super(stats); }
-
+    
     public void build() {
-        final List<String> abilityScoreNames = Arrays.asList("strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma");
-        abilityScoreNames.forEach(n -> agg(n, rootleaf, values -> {
-            final Set<String> values2 = values.stream().map(x -> x.getStringValue()).collect(Collectors.toSet());
-            if (values2.contains("-"))
-                return null;
-            if (values2.contains("none"))
-                return null;
-            return sumAsInts(values);
-        }));
-        abilityScoreNames.forEach(n -> agg(n + " modifier", leaf, values -> sumAsInts(values).source(n)));
-        abilityScoreNames.forEach(n -> agg(n + " bonus",    leaf));
-        abilityScoreNames.forEach(n -> agg(n + " penalty",  leaf));
-        abilityScoreNames.forEach(n -> to1(n + " modifier", n,               input -> input.value.equals("-") ? null : input.add(-10).mult(0.5).floor()));
-        abilityScoreNames.forEach(n -> to1(n + " bonus",    n + " modifier", input -> input.max(0)));
-        abilityScoreNames.forEach(n -> to1(n + " penalty",  n + " modifier", input -> input.min(0)));
+        for (final String name : abilityScoreStatNames) {
+            stat(name).agg(rootleaf, values -> {
+                final Set<String> values2 = values.stream().map(x -> x.getStringValue()).collect(Collectors.toSet());
+                if (values2.contains("-"))
+                    return null;
+                if (values2.contains("none"))
+                    return null;
+                return sumAsInts(values);
+            });
+            stat(name)
+            .to1(name + " modifier", input -> input.value.equals("-") ? null : input.add(-10).mult(0.5).floor())
+            .agg(leaf, values -> sumAsInts(sort(values, value -> value.source)).source(name));
+            
+            stat(name)
+            .to1(name + " bonus", input -> input.value.equals("-") ? null : input.add(-10).mult(0.5).floor())
+            .agg(leaf, values -> sumAsInts(sort(values, value -> value.source)).source(name).atLeast(0));
+            
+            stat(name)
+            .to1(name + " penalty", input -> input.value.equals("-") ? null : input.add(-10).mult(0.5).floor())
+            .agg(leaf, values -> sumAsInts(sort(values, value -> value.source)).source(name).atMost(0));
+        }
     }
     
 

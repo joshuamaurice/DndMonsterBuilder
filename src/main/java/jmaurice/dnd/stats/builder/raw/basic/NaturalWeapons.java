@@ -26,14 +26,14 @@ public class NaturalWeapons extends BaseBuilder {
                 "pincer", "pincers", "tail slap", "tail slaps"
                 );
         
-        naturalWeapons.forEach(name -> agg(name, root, values -> sumAsInts(values)));
-        naturalWeapons.forEach(name -> to1("weapon properties", name, value -> 
+        naturalWeapons.forEach(name -> stat(name).agg(root, values -> sumAsInts(values)));
+        naturalWeapons.forEach(name -> stat(name).to1("weapon properties", value -> 
             new Value("name=" + name + ",num=" + value.getIntValue() + ",melee,natural")
         ));
-        reducedDamageNaturalWeapons.forEach(name -> to1("weapon properties", name, new Value("name=" + name + ",natural weapon damage size modifiers=-1")));
-        secondaryNaturalWeapons.forEach(name -> to1("weapon properties", name, new Value("name=" + name + ",secondary natural")));
+        reducedDamageNaturalWeapons.forEach(name -> stat(name).to1("weapon properties", new Value("name=" + name + ",natural weapon damage size modifiers=-1")));
+        secondaryNaturalWeapons.forEach(name -> stat(name).to1("weapon properties", new Value("name=" + name + ",secondary natural")));
         
-        to1("weapon properties", "swarm attack", root, new Value("name=swarm,num=1,swarm,natural"));
+        stat("swarm attack").agg(root).to1("weapon properties", new Value("name=swarm,num=1,swarm,natural"));
     }
 
 }

@@ -11,59 +11,60 @@ public class MiscSpecialAbilities extends BaseBuilder {
     public MiscSpecialAbilities(final Stats stats) { super(stats); }
 
     public void build() {
-        to1("special abilities short", "pounce", root, new Value("pounce"));
-        to1("special abilities short", "tail sweep", root, new Value("tail sweep"));
+        stat("all-around vision").agg(root).to1("defensive abilities", new Value("<a href=\"https://www.d20pfsrd.com/BESTIARY/RULES-FOR-MONSTERS/UNIVERSAL-MONSTER-RULES/#all-around_vision_ex\">all-around vision</a>"));
+        stat("pounce").agg(root).to1("special abilities short", new Value("pounce"));
+        stat("tail sweep").agg(root).to1("special abilities short", new Value("tail sweep"));
         
-        commonPowerResistance();
-        commonSpellResistance();
+        powerResistance();
+        spellResistance();
     }
     
-    private void commonPowerResistance() {
-        agg("power resistance");
+    private void powerResistance() {
+        stat("power resistance").agg();
         
-        agg("bad PR", root);
-        input("power resistance", Arrays.asList("bad PR", "challenge rating"), stats -> {
-            if ( ! stats.get("bad PR").getBooleanValue(false))
+        stat("bad PR").agg(root);
+        input1("power resistance", Arrays.asList("bad PR", "challenge rating"), stats -> {
+            if (stats.get("bad PR").getValues().size() == 0)
                 return null;
             return new Value(6 + stats.get("challenge rating").getIntValue());
         });
         
-        agg("medium PR", root);
-        input("power resistance", Arrays.asList("medium PR", "challenge rating"), stats -> {
-            if ( ! stats.get("medium PR").getBooleanValue(false))
+        stat("medium PR").agg(root);
+        input1("power resistance", Arrays.asList("medium PR", "challenge rating"), stats -> {
+            if (stats.get("medium PR").getValues().size() == 0)
                 return null;
             return new Value(11 + stats.get("challenge rating").getIntValue());
         });
         
-        agg("good PR", root);
-        input("power resistance", Arrays.asList("good PR", "challenge rating"), stats -> {
-            if ( ! stats.get("good PR").getBooleanValue(false))
+        stat("good PR").agg(root);
+        input1("power resistance", Arrays.asList("good PR", "challenge rating"), stats -> {
+            if (stats.get("good PR").getValues().size() == 0)
                 return null;
             return new Value(16 + stats.get("challenge rating").getIntValue());
         });
 
     }
 
-    private void commonSpellResistance() {
-        agg("spell resistance");
+    private void spellResistance() {
+        stat("spell resistance").agg();
         
-        agg("bad SR", root);
-        input("spell resistance", Arrays.asList("bad SR", "challenge rating"), stats -> {
-            if ( ! stats.get("bad SR").getBooleanValue(false))
+        stat("bad SR").agg(root);
+        input1("spell resistance", Arrays.asList("bad SR", "challenge rating"), stats -> {
+            if (stats.get("bad SR").getValues().size() == 0)
                 return null;
             return new Value(6 + stats.get("challenge rating").getIntValue());
         });
         
-        agg("medium SR", root);
-        input("spell resistance", Arrays.asList("medium SR", "challenge rating"), stats -> {
-            if ( ! stats.get("medium SR").getBooleanValue(false))
+        stat("medium SR").agg(root);
+        input1("spell resistance", Arrays.asList("medium SR", "challenge rating"), stats -> {
+            if (stats.get("medium SR").getValues().size() == 0)
                 return null;
             return new Value(11 + stats.get("challenge rating").getIntValue());
         });
         
-        agg("good SR", root);
-        input("spell resistance", Arrays.asList("good SR", "challenge rating"), stats -> {
-            if ( ! stats.get("good SR").getBooleanValue(false))
+        stat("good SR").agg(root);
+        input1("spell resistance", Arrays.asList("good SR", "challenge rating"), stats -> {
+            if (stats.get("good SR").getValues().size() == 0)
                 return null;
             return new Value(16 + stats.get("challenge rating").getIntValue());
         });

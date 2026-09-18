@@ -23,38 +23,40 @@ public class AttackRoutine extends BaseBuilder {
     public AttackRoutine(final Stats stats) { super(stats); }
 
     public void build() {
+        stat("base attack bonus").agg(values -> sumAsDoubles(values).floor()); //sumAsDoubles to support partial base attack bonus multiclassing
+        stat("epic base attack bonus").agg(values -> sumAsDoubles(values).floor()); //sumAsDoubles to support partial base attack bonus multiclassing
+        stat("default").to1("base attack bonus", new Value(0));
         combatManeuversBonus();
         weaponAttackRoutines();
     }
     
     private void combatManeuversBonus() {
-        agg("base attack bonus", values -> sumAsDoubles(values).floor()); //sumAsDoubles to support partial base attack bonus multiclassing
-        agg("epic base attack bonus", root, values -> sumAsDoubles(values).floor()); //sumAsDoubles to support partial base attack bonus multiclassing
-        to1("base attack bonus", "default", new Value(0));
-        agg("combat maneuvers bonus", values -> withSign(sumAsInts(values)));
-        to1("combat maneuvers bonus", "default", new Value(0));
-        to1("combat maneuvers bonus", "base attack bonus", value -> value.source("base attack bonus"));
-        to1("combat maneuvers bonus", "epic base attack bonus", value -> value.source("epic base attack bonus"));
-        to1("combat maneuvers bonus", "size modifier to attack", value -> value.mult(-1).source("size"));
-        to1("combat maneuvers bonus", "strength modifier", value -> value.source("str"));
+        stat("combat maneuvers bonus").agg(values -> withSign(sumAsInts(values)));
+        stat("default"                ).to1("combat maneuvers bonus", new Value(0));
+        stat("base attack bonus"      ).to1("combat maneuvers bonus", value -> value.source("base attack bonus"));
+        stat("epic base attack bonus" ).to1("combat maneuvers bonus", value -> value.source("epic base attack bonus"));
+        stat("size modifier to attack").to1("combat maneuvers bonus", value -> value.mult(-1).source("size"));
+        stat("strength modifier"      ).to1("combat maneuvers bonus", value -> value.source("str"));
     }
     
     private void weaponAttackRoutines() {
         final List<String> weaponIds = IntStream.range(1, 6+1).mapToObj(x -> x + "").toList();
     
-        aggN("global attack modifiers", rootleaf, values -> values);
-        aggN("global melee attack modifiers", rootleaf, values -> values);
-        aggN("global range attack modifiers", rootleaf, values -> values);
+        stat("global attack modifiers").aggN(rootleaf);
+        stat("global melee attack modifiers").aggN(rootleaf);
+        stat("global range attack modifiers").aggN(rootleaf);
         
-        aggN("weapon properties", values -> values);
-        agg("attack routine", rootleaf, values -> join(values, ", ").orElse(null));
-        aggN("weapon names", rootleaf, values -> values);
-        agg("using unarmed strikes", root);
-        agg("using manufactured weapons", root);
-        weaponIds.forEach(weaponId -> agg("weapon " + weaponId + " attack routine", root));
-        weaponIds.forEach(weaponId -> aggN("weapon " + weaponId + " properties", root, values -> values));
-        weaponIds.forEach(weaponId -> aggN("weapon " + weaponId + " attack modifiers", rootleaf, values -> values)); //for debugging
-        weaponIds.forEach(weaponId -> aggN("weapon " + weaponId + " damage modifiers", rootleaf, values -> values)); //for debugging
+        stat("weapon properties").aggN();
+        stat("attack routine").aggN(rootleaf);
+        stat("weapon names").aggN(rootleaf);
+        stat("using unarmed strikes").agg(root);
+        stat("using manufactured weapons").agg(root);
+        for (final String weaponId : weaponIds) {
+            stat("weapon " + weaponId + " attack routine").agg(root);
+            stat("weapon " + weaponId + " properties").aggN(root);
+            stat("weapon " + weaponId + " attack modifiers").aggN(rootleaf); //for debugging
+            stat("weapon " + weaponId + " damage modifiers").aggN(rootleaf); //for debugging
+        }
         
         final List<String> parseWeaponPropertiesPostStats = new ArrayList<>();
         parseWeaponPropertiesPostStats.add("weapon names");
@@ -63,7 +65,7 @@ public class AttackRoutine extends BaseBuilder {
         weaponIds.forEach(weaponId -> parseWeaponPropertiesPostStats.add("weapon " + weaponId + " properties"));
         final List<String> parseWeaponPropertiesOtherInputs = new ArrayList<>();
         parseWeaponPropertiesOtherInputs.add("weapon properties");
-        agg("parse weapon properties", leaf);
+        stat("parse weapon properties").agg(leaf);
         stats.postAggX("parse weapon properties", parseWeaponPropertiesPostStats, parseWeaponPropertiesOtherInputs, (stats, readOnlyStats) -> {
             final List<Value> allWeaponProperties = readOnlyStats.get("weapon properties").getValues();
             if (allWeaponProperties.isEmpty())
@@ -143,13 +145,13 @@ public class AttackRoutine extends BaseBuilder {
             }
         });
         
-        agg("finesse dex to damage", root);
-        agg("multiattack", root);
-        agg("weapon finesse", root);
-        agg("high melee attack bonus", rootleaf, values -> maxAsInts(values));
-        agg("high range attack bonus", rootleaf, values -> maxAsInts(values));
-        agg("average melee damage", rootleaf, values -> sumAsDoubles(values));
-        agg("average range damage", rootleaf, values -> sumAsDoubles(values));
+        stat("finesse dex to damage").agg(root);
+        stat("multiattack").agg(root);
+        stat("weapon finesse").agg(root);
+        stat("high melee attack bonus").agg(rootleaf, values -> maxAsInts(values));
+        stat("high range attack bonus").agg(rootleaf, values -> maxAsInts(values));
+        stat("average melee damage").agg(rootleaf, values -> sumAsDoubles(values));
+        stat("average range damage").agg(rootleaf, values -> sumAsDoubles(values));
 
         weaponIds.forEach(weaponId -> {
             final List<String> postStatNames = new ArrayList<>();
@@ -192,16 +194,16 @@ public class AttackRoutine extends BaseBuilder {
                 final ValuedStat averageRangeDamage = stats.get("average range damage"); //for later comparison
                 final Integer strengthModifier = readOnlyStats.get("strength modifier").getIntValue();
                 final Integer dexterityModifier = readOnlyStats.get("dexterity modifier").getIntValue();
-                final boolean globalFinesseDexToDamage = readOnlyStats.get("finesse dex to damage").getBooleanValue(false);
+                final boolean globalFinesseDexToDamage = readOnlyStats.get("finesse dex to damage").getValues().size() > 0;
                 final Integer baseAttackBonus = readOnlyStats.get("base attack bonus").getIntValue();
                 final Integer epicBaseAttackBonus = readOnlyStats.get("epic base attack bonus").getIntValue();
                 final Integer sizeModifierToAttack = readOnlyStats.get("size modifier to attack").getIntValue();
                 final String size = readOnlyStats.get("size").getStringValue();
-                final boolean incorporeal = readOnlyStats.get("incorporeal").getBooleanValue(false);
-                final boolean weaponFinesse = readOnlyStats.get("weapon finesse").getBooleanValue(false);
-                final boolean multiattack = readOnlyStats.get("multiattack").getBooleanValue(false);
-                final boolean usingUnarmedStrikes = readOnlyStats.get("using unarmed strikes").getBooleanValue(false);
-                final boolean usingManufacturedWeapons = readOnlyStats.get("using manufactured weapons").getBooleanValue(false);
+                final boolean incorporeal = readOnlyStats.get("incorporeal").getValues().size() > 0;
+                final boolean weaponFinesse = readOnlyStats.get("weapon finesse").getValues().size() > 0;
+                final boolean multiattack = readOnlyStats.get("multiattack").getValues().size() > 0;
+                final boolean usingUnarmedStrikes = readOnlyStats.get("using unarmed strikes").getValues().size() > 0;
+                final boolean usingManufacturedWeapons = readOnlyStats.get("using manufactured weapons").getValues().size() > 0;
                 final List<Value> globalAttackModifiers = readOnlyStats.get("global attack modifiers").getValues();
                 final List<Value> globalMeleeAttackModifiers = readOnlyStats.get("global melee attack modifiers").getValues();
                 final List<Value> globalRangeAttackModifiers = readOnlyStats.get("global range attack modifiers").getValues();
@@ -217,7 +219,7 @@ public class AttackRoutine extends BaseBuilder {
                     props.computeIfAbsent(propName, k -> new ArrayList<>()).add(propValue);
                 }
                 final String name = val1(props.remove("name"));
-                final int numWeaponsOfSameName = Optional.ofNullable(props.remove("num")).map(x -> sumStringAsInts(x)).orElse(1);
+                final int numWeaponsOfSameName = Optional.ofNullable(props.remove("num")).map(x -> sumAsIntsS(x)).orElse(1);
                 final int numAttacksMultiplier = val01(props.remove("num attacks multiplier")).map(x -> Integer.parseInt(x)).orElse(1);
                 final boolean melee = props.remove("melee") != null;
                 final boolean range = props.remove("range") != null;
@@ -282,34 +284,34 @@ public class AttackRoutine extends BaseBuilder {
                 List<Value> attackModifiers = new ArrayList<>();
                 if ( ! swarm) {
                     if (baseAttackBonus != null)
-                        attackModifiers.add(new Value(baseAttackBonus, "base attack bonus"));
+                        attackModifiers.add(new Value(baseAttackBonus).source("base attack bonus"));
                     if (epicBaseAttackBonus != null)
-                        attackModifiers.add(new Value(epicBaseAttackBonus, "epic base attack bonus"));
+                        attackModifiers.add(new Value(epicBaseAttackBonus).source("epic base attack bonus"));
                     if (sizeModifierToAttack != null)
-                        attackModifiers.add(new Value(sizeModifierToAttack, "size"));
+                        attackModifiers.add(new Value(sizeModifierToAttack).source("size"));
                     if (secondaryNatural) {
                         if (multiattack) {
-                            attackModifiers.add(new Value(-2, "multiattack secondary natural weapon"));
+                            attackModifiers.add(new Value(-2).source("multiattack secondary natural weapon"));
                         } else {
-                            attackModifiers.add(new Value(-5, "secondary natural weapon"));
+                            attackModifiers.add(new Value(-5).source("secondary natural weapon"));
                         }
                     }
                     if (melee && weaponFinesse && finessable && dexterityModifier != null) {
                         if (strengthModifier == null) {
-                            attackModifiers.add(new Value(dexterityModifier, "finessable dexterity"));
+                            attackModifiers.add(new Value(dexterityModifier).source("finessable dexterity"));
                         } else if (strengthModifier < dexterityModifier) {
-                            attackModifiers.add(new Value(dexterityModifier, "finessable dexterity"));
+                            attackModifiers.add(new Value(dexterityModifier).source("finessable dexterity"));
                         } else {
-                            attackModifiers.add(new Value(strengthModifier, "finessable strength"));
+                            attackModifiers.add(new Value(strengthModifier).source("finessable strength"));
                         }
                     } else if (melee && incorporeal) {
-                        attackModifiers.add(new Value(dexterityModifier, "incorporeal melee dexterity"));
+                        attackModifiers.add(new Value(dexterityModifier).source("incorporeal melee dexterity"));
                     } else if (range) {
-                        attackModifiers.add(new Value(dexterityModifier, "range dexterity"));
+                        attackModifiers.add(new Value(dexterityModifier).source("range dexterity"));
                     } else if (thrown) {
-                        attackModifiers.add(new Value(dexterityModifier, "thrown dexterity"));
+                        attackModifiers.add(new Value(dexterityModifier).source("thrown dexterity"));
                     } else if (melee) {
-                        attackModifiers.add(new Value(strengthModifier, "default melee strength"));
+                        attackModifiers.add(new Value(strengthModifier).source("default melee strength"));
                     } else {
                         throw new RuntimeException("don't know what ability score modifier to use for attack for weapon: " + weaponName);
                     }
@@ -369,34 +371,34 @@ public class AttackRoutine extends BaseBuilder {
                 if (strengthModifier != null) {
                     if (noStrengthToDamage) {
                     } else if (halfStrengthToDamage) {
-                        strToDamage = new Value(strengthModifier / 2, "half strength");
+                        strToDamage = new Value(strengthModifier / 2).source("half strength");
                     } else if (melee) {
                         if (natural && weaponNames.size() == 1 && numWeaponsOfSameName == 1 && numAttacksMultiplier == 1) {
-                            strToDamage = new Value(strengthModifier + strengthModifier / 2, "single natural weapon strength and a half");
+                            strToDamage = new Value(strengthModifier + strengthModifier / 2).source("single natural weapon strength and a half");
                         } else if (secondaryNatural) {
-                            strToDamage = new Value(strengthModifier / 2, "secondary natural weapon half strength");
+                            strToDamage = new Value(strengthModifier / 2).source("secondary natural weapon half strength");
                         } else if (natural) {
-                            strToDamage = new Value(strengthModifier, "natural weapon strength");
+                            strToDamage = new Value(strengthModifier).source("natural weapon strength");
                         } else if (twoHanded) { //assumed in two hands
-                            strToDamage = new Value(strengthModifier + strengthModifier / 2, "two-handed weapon strength and a half");
+                            strToDamage = new Value(strengthModifier + strengthModifier / 2).source("two-handed weapon strength and a half");
                         } else if (oneHanded && inTwoHands) {
-                            strToDamage = new Value(strengthModifier + strengthModifier / 2, "one-handed weapon in two hands strength and a half");
+                            strToDamage = new Value(strengthModifier + strengthModifier / 2).source("one-handed weapon in two hands strength and a half");
                         } else if (inOffHand) {
-                            strToDamage = new Value(strengthModifier / 2, "off-hand half strength");
+                            strToDamage = new Value(strengthModifier / 2).source("off-hand half strength");
                         } else {
-                            strToDamage = new Value(strengthModifier, "default melee strength");
+                            strToDamage = new Value(strengthModifier).source("default melee strength");
                         }
                     } else if (range) {
-                        strToDamage = new Value(strengthModifier, "default range strength");
+                        strToDamage = new Value(strengthModifier).source("default range strength");
                     } else if (thrown) {
-                        strToDamage = new Value(strengthModifier, "default thrown strength");
+                        strToDamage = new Value(strengthModifier).source("default thrown strength");
                     }
                 }
                 if (dexterityModifier != null && melee && finessable && (globalFinesseDexToDamage || weaponDexToDamage)) {
                     if (strToDamage == null) {
-                        damageModifiers.add(new Value(dexterityModifier, "dexterity"));
+                        damageModifiers.add(new Value(dexterityModifier).source("dexterity"));
                     } else if (strToDamage.getIntValue() < dexterityModifier) {
-                        damageModifiers.add(new Value(dexterityModifier, "dexterity"));
+                        damageModifiers.add(new Value(dexterityModifier).source("dexterity"));
                     } else {
                         damageModifiers.add(strToDamage);
                     }
@@ -491,7 +493,7 @@ public class AttackRoutine extends BaseBuilder {
                 final Integer damageDiceSize = Optional.ofNullable(baseDamageMatcher.group(2)).map(x -> Integer.parseInt(x)).orElse(null);
                 final double averageBaseDamage = damageDiceSize == null ? numDamageDice : numDamageDice * (damageDiceSize + 1) * 0.5;
                 final List<Value> averageDamageValues = new ArrayList<>(averageDamageStat.getValues());
-                averageDamageValues.add(new Value(numAttacks * (averageBaseDamage + damageModifier), weaponName));
+                averageDamageValues.add(new Value(numAttacks * (averageBaseDamage + damageModifier)).source(weaponName));
                 averageDamageStat.setValues(averageDamageValues);
                 
                 //
@@ -503,7 +505,7 @@ public class AttackRoutine extends BaseBuilder {
                 else
                     throw new RuntimeException();
                 if (highAttackBonusStat.getIntValue() == null || highAttackBonusStat.getIntValue() < attackModifier)
-                    highAttackBonusStat.setValues(Collections.singletonList(new Value(attackModifier, weaponName)));
+                    highAttackBonusStat.setValues(Collections.singletonList(new Value(attackModifier).source(weaponName)));
             });
         });
             

@@ -13,22 +13,22 @@ public class Aberrations extends BaseBuilder {
 
     public void build() {
         //aberration hit dice
-        agg("aberration hit dice", values -> sumAsInts(values));
-        to1("hit dice", "aberration hit dice", input -> new Value(input.getIntValue() + "d8", "aberration"));
-        to1("base attack bonus", "aberration hit dice", input -> input.mult(0.75).source("aberration"));
-        to1("fortitude bad levels", "aberration hit dice");
-        to1("reflex bad levels",    "aberration hit dice");
-        to1("will good levels",     "aberration hit dice");
+        stat("aberration hit dice").agg(values -> sumAsInts(values));
+        stat("aberration hit dice").to1("hit dice", input -> new Value(input.getIntValue() + "d8").source("aberration"));
+        stat("aberration hit dice").to1("base attack bonus", input -> input.mult(0.75).source("aberration"));
+        stat("aberration hit dice").to1("fortitude bad levels");
+        stat("aberration hit dice").to1("reflex bad levels");
+        stat("aberration hit dice").to1("will good levels");
         
         //aberration creature type
-        to1("aberration", "creature type", input -> input.getStringValue().equals("aberration") ? new Value(true) : null);
-        to1("senses", "aberration", new Value("darkvision 60 ft")); 
+        stat("creature type").to1("aberration", input -> input.getStringValue().equals("aberration") ? new Value(true) : null);
+        stat("aberration").to1("senses", new Value("darkvision 60 ft")); 
         final List<String> classSkills = Arrays.asList(
                 "acrobatics", "climb", "escape artist", "fly", "intimidate", 
                 "perception", "spellcraft", "stealth", "survival", "swim"
                 //"knowledge (pick one)
                 );
-        classSkills.forEach(skill -> to1(skill + " class skill", "aberration", input -> new Value(true, "aberration")));
+        classSkills.forEach(skill -> stat("aberration").to1(skill + " class skill", input -> new Value(true)));
     }
 
 }

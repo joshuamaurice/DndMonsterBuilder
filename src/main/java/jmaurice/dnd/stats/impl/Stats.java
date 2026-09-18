@@ -1,22 +1,23 @@
 package jmaurice.dnd.stats.impl;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import jmaurice.dnd.graph.Graph;
 
 public class Stats {
     
     private Map<String, Stat> stats = new LinkedHashMap<>();
-    private Graph<String> graph;
-    private Graph<String> inverseGraph;
+    private Graph<String, Void> graph;
+    private Graph<String, Void> inverseGraph;
     
     public Set<String> statNames() {
         return Collections.unmodifiableSet(stats.keySet());
@@ -110,55 +111,37 @@ public class Stats {
     }
     
     public void initializeGraphAndInverseGraph() {
-        final Function<String, Set<String>> next = name -> {
+        final Function<String, Map<String, Void>> next = name -> {
             final Stat stat = stats.get(name);
-            final Set<String> r = new LinkedHashSet<>();
-            stat.inputRules.forEach(rule -> r.addAll(rule.inputStatNames));
-            stat.preAggRules.forEach(rule -> r.addAll(rule.readOnlyStatNames));
-            stat.postAggRules.forEach(rule -> r.addAll(rule.readOnlyStatNames));
+            final Map<String, Void> r = new LinkedHashMap<>();
+            stat.inputRules.forEach(rule -> rule.inputStatNames.forEach(n -> r.put(n, null)));
+            stat.preAggRules.forEach(rule -> rule.readOnlyStatNames.forEach(n -> r.put(n, null)));
+            stat.preAggRules.forEach(rule -> rule.additionalWritableStatNames.forEach(n -> r.put(n, null)));
+            stat.postAggRules.forEach(rule -> rule.readOnlyStatNames.forEach(n -> r.put(n, null)));
+            stat.postAggRules.forEach(rule -> rule.additionalWritableStatNames.forEach(n -> r.put(n, null)));
             return r;
         };
         inverseGraph = Graph.fromRoots(stats.keySet(), next);
         
         //
-        graph = inverseGraph.inverse();
+        graph = inverseGraph.makeInverse();
         
         //
         for (final Stat stat : stats.values()) {
-            for (final PostRule rule : stat.preAggRules) {
-                for (final String writableInputStatName : rule.additionalWritableStatNames) {
-                    for (final String downstreamStatName : new ArrayList<>(graph.edges(writableInputStatName))) {
-                        if (stat.name().equals(downstreamStatName))
-                            continue;
-                        graph.addEdge(stat.name(), downstreamStatName);
-                        inverseGraph.addEdge(downstreamStatName, stat.name());
-                    }
-                }
-            }
-            for (final PostRule rule : stat.postAggRules) {
-                for (final String writableInputStatName : rule.additionalWritableStatNames) {
-                    for (final String downstreamStatName : new ArrayList<>(graph.edges(writableInputStatName))) {
-                        if (stat.name().equals(downstreamStatName))
-                            continue;
-                        graph.addEdge(stat.name(), downstreamStatName);
-                        inverseGraph.addEdge(downstreamStatName, stat.name());
-                    }
-                }
-            }
-        }
-        
-        //
-        for (final Stat stat : stats.values()) {
-            for (final PostRule rule : stat.preAggRules) {
-                for (final String writableInputStatName : rule.additionalWritableStatNames) {
-                    graph.addEdge(writableInputStatName, stat.name());
-                    inverseGraph.addEdge(stat.name(), writableInputStatName);
-                }
-            }
-            for (final PostRule rule : stat.postAggRules) {
-                for (final String writableInputStatName : rule.additionalWritableStatNames) {
-                    graph.addEdge(writableInputStatName, stat.name());
-                    inverseGraph.addEdge(stat.name(), writableInputStatName);
+            for (final String inputStatName : iterable(
+                    stat.inputRules.stream().flatMap(x -> x.inputStatNames.stream()),
+                    stat.preAggRules.stream().flatMap(x -> x.readOnlyStatNames.stream()),
+                    stat.postAggRules.stream().flatMap(x -> x.readOnlyStatNames.stream())
+                    )) {
+                final Stat inputStat = getStat(inputStatName);
+                for (final String postStatName : iterable(
+                        inputStat.preAggRules.stream().flatMap(x -> x.additionalWritableStatNames.stream()),
+                        inputStat.postAggRules.stream().flatMap(x -> x.additionalWritableStatNames.stream())
+                        )) {
+                    if (stat.name().equals(postStatName))
+                        continue;
+                    graph.addEdge(postStatName, stat.name());
+                    inverseGraph.addEdge(stat.name(), postStatName);
                 }
             }
         }
@@ -178,7 +161,12 @@ public class Stats {
         }
     }
 
-    public Graph<String> graph() { return graph; }
-    public Graph<String> inverseGraph() { return inverseGraph; }
+    public Graph<String, Void> graph() { return graph; }
+    public Graph<String, Void> inverseGraph() { return inverseGraph; }
+    
+    @SafeVarargs
+    private static <E> Iterable<E> iterable(Stream<E>... inputs) {
+        return Arrays.asList(inputs).stream().flatMap(x -> x).toList();
+    }
     
 }

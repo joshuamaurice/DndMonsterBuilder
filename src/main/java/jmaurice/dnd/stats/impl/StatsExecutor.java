@@ -27,7 +27,7 @@ public class StatsExecutor {
     }
     
     private void execute2() {
-        valued.get("default").addInitialValue(new Value("true", "default"));
+        valued.get("default").addInitialValue(new Value("true").source("default"));
         final ExecutorService executor = Executors.newFixedThreadPool(16);
         try (Closeable shutdownExecutor = () -> shutdownAndWait(executor, 1, TimeUnit.MINUTES)) {
             Traversal.ordered(stats.graph(), stats.inverseGraph(), name -> execute(valued.get(name)), executor);
@@ -138,8 +138,6 @@ public class StatsExecutor {
             @Override public Optional<Value> val01() { return stat.val01(); }
             @Override public Value val1() { return stat.val1(); }
             @Override public String toString() { return "readOnlyStat(" + stat.stat.name + "=" + stat.getValues() + ")"; }
-            @Override public Boolean getBooleanValue() { return stat.getBooleanValue(); }
-            @Override public boolean getBooleanValue(boolean defaultValue) { return stat.getBooleanValue(defaultValue); }
             @Override public Double getDoubleValue() { return stat.getDoubleValue(); }
             @Override public Integer getIntValue() { return stat.getIntValue(); }
             @Override public String getStringValue() { return stat.getStringValue(); }

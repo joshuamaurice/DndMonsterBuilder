@@ -4,10 +4,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import jmaurice.dnd.stats.impl.ReadOnlyValuedStat;
 import jmaurice.dnd.stats.impl.Stats;
@@ -65,162 +71,19 @@ public class BaseBuilder {
     
     //
     
-    protected static class RootLeafOption {}
-    protected static final RootLeafOption rootleaf = new RootLeafOption();
-    protected static final RootLeafOption root = new RootLeafOption();
-    protected static final RootLeafOption leaf = new RootLeafOption();
-    
-    protected void to1(String outputStatName, Value value) {
-        to1(outputStatName, "default", null, value);
-    }
-    
-    /** the rule will not be called when the input is empty aka zero-values */
-    protected void to1(String outputStatName, String inputStatName) {
-        to1(outputStatName, inputStatName, null, value -> value.source(inputStatName));
-    }
-    
-    /** the rule will not be called when the input is empty aka zero-values */
-    protected void to1(String outputStatName, String inputStatName, RootLeafOption rootLeafOption) {
-        to1(outputStatName, inputStatName, rootLeafOption, value -> value.source(inputStatName));
-    }
-    
-    /** the rule will not be called when the input is empty aka zero-values */
-    protected void to1(String outputStatName, String inputStatName, Value value) {
-        to1(outputStatName, inputStatName, null, inputValue -> value);
-    }
-    
-    /** the rule will not be called when the input is empty aka zero-values */
-    protected void to1(String outputStatName, String inputStatName, RootLeafOption rootLeafOption, Value value) {
-        to1(outputStatName, inputStatName, rootLeafOption, inputValue -> value);
-    }
-    
-    /** the rule will not be called when the input is empty aka zero-values */
-    protected void to1(String outputStatName, String inputStatName, Function<Value, Value> rule) {
-        to1(outputStatName, inputStatName, null, rule);
-    }
-    
-    /** the rule will not be called when the input is empty aka zero-values */
-    protected void to1(String outputStatName, String inputStatName, RootLeafOption rootLeafOption, Function<Value, Value> rule) {
-        final Function<Map<String, ReadOnlyValuedStat>, List<Value>> rule2 = stats -> {
-            Optional<Value> inputValue = stats.get(inputStatName).val01();
-            if (inputValue.isEmpty())
-                return Collections.emptyList();
-            Value outputValue = rule.apply(inputValue.get());
-            if (outputValue == null)
-                return Collections.emptyList();
-            if (outputValue.source == null)
-                outputValue = outputValue.source(inputStatName);
-            return Collections.singletonList(outputValue);
-        };
-        stats.input(outputStatName, Collections.singletonList(inputStatName), rule2);
-        if (rootLeafOption == root || rootLeafOption == rootleaf)
-            stats.getStat(inputStatName).setRoot(true);
-        if (rootLeafOption == leaf || rootLeafOption == rootleaf)
-            stats.getStat(inputStatName).setLeaf(true);
-    }
-    
-    /** the rule will not be called when the input is empty aka zero-values */
-    protected void toN(String outputStatName, String inputStatName) {
-        toN(outputStatName, inputStatName, null, values -> values);
-    }
-    
-    /** the rule will not be called when the input is empty aka zero-values */
-    protected void toN(String outputStatName, String inputStatName, Function<List<Value>, List<Value>> rule) {
-        toN(outputStatName, inputStatName, null, rule);
-    }
-    
-    /** the rule will not be called when the input is empty aka zero-values */
-    protected void toN(String outputStatName, String inputStatName, RootLeafOption rootLeafOption, Function<List<Value>, List<Value>> rule) {
-        final Function<Map<String, ReadOnlyValuedStat>, List<Value>> rule2 = stats -> {
-            List<Value> inputValues = stats.get(inputStatName).getValues();
-            if (inputValues.isEmpty())
-                return Collections.emptyList();
-            List<Value> outputValues = rule.apply(inputValues);
-            if (outputValues == null)
-                return Collections.emptyList();
-            return outputValues;
-        };
-        stats.input(outputStatName, Collections.singletonList(inputStatName), rule2);
-        if (rootLeafOption == root || rootLeafOption == rootleaf)
-            stats.getStat(inputStatName).setRoot(true);
-        if (rootLeafOption == leaf || rootLeafOption == rootleaf)
-            stats.getStat(inputStatName).setLeaf(true);
+    /** the rule will always be called; there is no implicit short-circuiting when some or all of the input is empty */
+    protected StatContext input1(String outputStatName, List<String> inputStatNames, Function<Map<String, ReadOnlyValuedStat>, Value> rule) {
+        final Function<Map<String, ReadOnlyValuedStat>, List<Value>> rule2 = input -> list01(rule.apply(input));
+        stats.input(outputStatName, inputStatNames, rule2);
+        return new StatContext(outputStatName);
     }
     
     /** the rule will always be called; there is no implicit short-circuiting when some or all of the input is empty */
-    protected void input(String outputStatName, List<String> inputStatNames, Function<Map<String, ReadOnlyValuedStat>, Value> rule) {
-        final Function<Map<String, ReadOnlyValuedStat>, List<Value>> rule2 = input -> list01(rule.apply(input));
-        stats.input(outputStatName, inputStatNames, rule2);
+    protected StatContext inputN(String outputStatName, List<String> inputStatNames, Function<Map<String, ReadOnlyValuedStat>, List<Value>> rule) {
+        stats.input(outputStatName, inputStatNames, rule);
+        return new StatContext(outputStatName);
     }
     
-    /** 
-     * asserts zero or one value
-     */
-    protected void agg(String statName) {
-        stats.agg(statName, values -> list01(val01(values)));
-    }
-    
-    /** 
-     * asserts zero or one value
-     */
-    protected void agg(String statName, RootLeafOption rootLeafOption) {
-        stats.agg(statName, values -> list01(val01(values)));
-        if (rootLeafOption == root || rootLeafOption == rootleaf)
-            stats.getStat(statName).setRoot(true);
-        if (rootLeafOption == leaf || rootLeafOption == rootleaf)
-            stats.getStat(statName).setLeaf(true);
-    }
-    
-    /** the rule will not be called when the input is empty aka zero-values */
-    protected void agg(String statName, Function<List<Value>, Value> rule) {
-        agg(statName, (RootLeafOption)null, rule);
-    }
-    
-    /** the rule will not be called when the input is empty aka zero-values */
-    protected void agg(String statName, RootLeafOption rootLeafOption, Function<List<Value>, Value> rule) {
-        final Function<List<Value>, List<Value>> rule2 = values -> {
-            if (values == null)
-                return null;
-            if (values.isEmpty())
-                return values;
-            final Value agg = rule.apply(values);
-            if (agg == null)
-                return Collections.emptyList();
-            return Collections.singletonList(agg);
-        };
-        stats.agg(statName, rule2);
-        if (rootLeafOption == root || rootLeafOption == rootleaf)
-            stats.getStat(statName).setRoot(true);
-        if (rootLeafOption == leaf || rootLeafOption == rootleaf)
-            stats.getStat(statName).setLeaf(true);
-    }
-    
-    /** the rule will not be called when the input is empty aka zero-values */
-    protected void aggN(String statName, Function<List<Value>, List<Value>> rule) {
-        aggN(statName, (RootLeafOption)null, rule);
-    }
-    
-    /** the rule will not be called when the input is empty aka zero-values */
-    protected void aggN(String statName, RootLeafOption rootLeafOption, Function<List<Value>, List<Value>> rule) {
-        final Function<List<Value>, List<Value>> rule2 = values -> {
-            if (values == null)
-                return null;
-            if (values.isEmpty())
-                return values;
-            values = rule.apply(values);
-            if (values == null)
-                return null;
-            return values;
-        };
-        stats.agg(statName, rule2);
-        if (rootLeafOption == root || rootLeafOption == rootleaf)
-            stats.getStat(statName).setRoot(true);
-        if (rootLeafOption == leaf || rootLeafOption == rootleaf)
-            stats.getStat(statName).setLeaf(true);
-    }
-    
-    //
-
     protected Optional<String> joinS(List<String> values) {
         return joinS(values, ", ");
     }
@@ -240,33 +103,6 @@ public class BaseBuilder {
         return Optional.of(r2);
     }
 
-    protected Optional<Value> join(List<Value> values) {
-        return join(values, ", ");
-    }
-    
-    protected Optional<Value> join(List<Value> values, String delimiter) {
-        if (values.isEmpty())
-            return Optional.empty();
-        final StringBuilder r = new StringBuilder();
-        for (Value value : values) {
-            if ( ! r.isEmpty())
-                r.append(delimiter);
-            r.append(value.getStringValue().trim());
-        }
-        final String r2 = r.toString().replaceAll("^( *,)* *", "").replaceAll("( *,)* *$", "");
-        if (r2.isEmpty())
-            return Optional.empty();
-        return Optional.of(new Value(r2));
-    }
-
-    protected Optional<Value> join(ReadOnlyValuedStat stat) {
-        return join(stat.getValues(), ", ");
-    }
-    
-    protected Optional<Value> join(ReadOnlyValuedStat stat, String delimiter) {
-        return join(stat.getValues(), delimiter);
-    }
-    
     protected Value maxAsDoubles(List<Value> values) {
         Value max = null;
         for (Value value : values) {
@@ -307,55 +143,160 @@ public class BaseBuilder {
         return values;
     }
     
-    protected List<Value> sort(List<Value> values) {
+    protected List<String> sortS(List<String> values, Function<String, String> sortBy) {
         values = new ArrayList<>(values);
-        Collections.sort(values, (a,b) -> a.getStringValue().compareTo(b.getStringValue()));
+        Collections.sort(values, (a,b) -> {
+            final String a2 = sortBy.apply(a);
+            final String b2 = sortBy.apply(b);
+            return a2.compareTo(b2);
+        });
         return values;
     }
     
-    protected Value sumAsDoubles(List<Value> values) {
-        double sum = 0;
-        final StringBuilder source = new StringBuilder();
-        for (Value value : values) {
-            final double valueDouble = value.getDoubleValue();
-            sum += valueDouble;
-            if ( ! source.isEmpty())
-                source.append(", ");
-            source.append(valueDouble);
-            if (value.source != null)
-                source.append(" ").append(value.source);
-        }
-        return new Value(sum, source.isEmpty() ? null : source.toString());
+    //TODO improve pattern
+    private static final Pattern stripHyperLinkPattern = Pattern.compile("^ *<a +href=\"[^\"]*\">(.*)</a> *$");
+    protected static final Function<String, String> stripHyperLinkS = input -> {
+        final Matcher m = stripHyperLinkPattern.matcher(input);
+        if (m.matches())
+            return m.group(1);
+        return input;
+    };
+    protected static final Function<Value, String> stripHyperLink = input -> {
+        final String s = input.getStringValue();
+        final Matcher m = stripHyperLinkPattern.matcher(s);
+        if (m.matches())
+            return m.group(1);
+        return s;
+    };
+    
+    protected List<Value> sort(List<Value> values) {
+        return sort(values, value -> value.getStringValue());
     }
     
-    protected static class SumAsIntsOption {};
-    protected static final SumAsIntsOption SkipZero = new SumAsIntsOption();
+    protected <E extends Comparable<E>> List<Value> sort(List<Value> values, Function<Value, E> sortBy) {
+        values = new ArrayList<>(values);
+        Collections.sort(values, (a,b) -> {
+            final E a2 = sortBy.apply(a);
+            final E b2 = sortBy.apply(b);
+            if (a2 == null && b2 == null)
+                return 0;
+            if (a2 == null)
+                return 1;
+            if (b2 == null)
+                return -1;
+            return a2.compareTo(b2);
+        });
+        return values;
+    }
     
-    protected Value sumAsInts(List<Value> values, SumAsIntsOption... options) {
-        final boolean skipZero = Arrays.asList(options).contains(SkipZero);
-        int sum = 0;
-        final StringBuilder source = new StringBuilder();
-        for (Value value : values) {
-            final int valueInt = value.getIntValue();
-            if (skipZero && valueInt == 0)
+    protected List<Value> sort(ReadOnlyValuedStat stat) {
+        return sort(stat.getValues());
+    }
+    
+    protected <E extends Comparable<E>> List<Value> sort(ReadOnlyValuedStat stat, Function<Value, E> sortBy) {
+        return sort(stat.getValues(), sortBy);
+    }
+    
+    protected static interface SumOption {};
+    protected static final class SkipZero implements SumOption {};
+    protected static final SkipZero skipZero = new SkipZero();
+    
+    protected Value sumAsInts(List<Value> values, final SumOption... options) {
+        final boolean skipZeroB = Arrays.asList(options).contains(skipZero);
+        
+        Map<String, List<Value>> valuesByType = new LinkedHashMap<>();
+        values.forEach(value -> valuesByType.computeIfAbsent(value.type, k -> new ArrayList<>()).add(value));
+        for (final String type : Arrays.asList("divine", "profane", "sacred")) {
+            final List<Value> valuesOfType = valuesByType.remove(type);
+            if (valuesOfType != null)
+                valuesByType.computeIfAbsent("religious", k -> new ArrayList<>()).addAll(valuesOfType);
+        }
+        
+        final Set<Value> ignored = new LinkedHashSet<>();
+        for (final Map.Entry<String, List<Value>> valuesOfType0 : valuesByType.entrySet()) {
+            final String type = valuesOfType0.getKey();
+            final List<Value> valuesOfType = valuesOfType0.getValue();
+            if (type.equals("untyped") || type.equals("dodge"))
                 continue;
-            sum += valueInt;
-            if (value.source == null || ! value.source.equals("default")) {
-                if ( ! source.isEmpty())
-                    source.append(", ");
-                source.append(valueInt);
-                if (value.source != null)
-                    source.append(" ").append(value.source);
+            final int maxValueInt = maxAsInts(valuesOfType).getIntValue();
+            final Value maxValue = valuesOfType.stream().filter(x -> x.getIntValue() == maxValueInt).findFirst().get();
+            valuesOfType.stream().filter(x -> x != maxValue).forEach(x -> ignored.add(x));
+        }
+        
+        int sum = 0;
+        final StringBuilder sumSource = new StringBuilder();
+        for (final Value value : values) {
+            final int valueInt = value.getIntValue();
+            if (skipZeroB && valueInt == 0)
+                continue;
+            if ( ! ignored.contains(value))
+                sum += valueInt;
+            if ( ! (value.source != null && value.source.equals("default"))) {
+                if ( ! sumSource.isEmpty())
+                    sumSource.append(", ");
+                if (value.source != null && ! value.source.isBlank()) {
+                    sumSource.append(valueInt).append(" ").append(value.source);
+                } else {
+                    sumSource.append(valueInt).append(" ").append(value.type);
+                }
+                if (ignored.contains(value))
+                    sumSource.append(" (non-stacking)");
             }
         }
-        return new Value(sum, source.isEmpty() ? null : source.toString());
+        return new Value(sum).source(sumSource.toString());
     }
     
-    protected int sumStringAsInts(List<String> values) {
-        int sum = 0;
-        for (String value : values)
-            sum += Integer.parseInt(value);
-        return sum;
+    protected Value sumAsDoubles(List<Value> values, final SumOption... options) {
+        final boolean skipZeroB = Arrays.asList(options).contains(skipZero);
+        
+        Map<String, List<Value>> valuesByType = new LinkedHashMap<>();
+        values.forEach(value -> valuesByType.computeIfAbsent(value.type, k -> new ArrayList<>()).add(value));
+        for (final String type : Arrays.asList("divine", "profane", "sacred")) {
+            final List<Value> valuesOfType = valuesByType.remove(type);
+            if (valuesOfType != null)
+                valuesByType.computeIfAbsent("religious", k -> new ArrayList<>()).addAll(valuesOfType);
+        }
+        
+        final Set<Value> ignored = new LinkedHashSet<>();
+        for (final Map.Entry<String, List<Value>> valuesOfType0 : valuesByType.entrySet()) {
+            final String type = valuesOfType0.getKey();
+            final List<Value> valuesOfType = valuesOfType0.getValue();
+            if (type.equals("untyped") || type.equals("dodge"))
+                continue;
+            final double maxValueDouble = maxAsDoubles(valuesOfType).getDoubleValue();
+            final Value maxValue = valuesOfType.stream().filter(x -> x.getDoubleValue() == maxValueDouble).findFirst().get();
+            valuesOfType.stream().filter(x -> x != maxValue).forEach(x -> ignored.add(x));
+        }
+        
+        double sum = 0;
+        final StringBuilder sumSource = new StringBuilder();
+        for (final Value value : values) {
+            final double valueDouble = value.getDoubleValue();
+            if (skipZeroB && valueDouble == 0)
+                continue;
+            if ( ! ignored.contains(value))
+                sum += valueDouble;
+            if ( ! (value.source != null && value.source.equals("default"))) {
+                if ( ! sumSource.isEmpty())
+                    sumSource.append(", ");
+                if (value.source != null && ! value.source.isBlank()) {
+                    sumSource.append(valueDouble).append(" ").append(value.source);
+                } else {
+                    sumSource.append(valueDouble).append(" ").append(value.type);
+                }
+                if (ignored.contains(value))
+                    sumSource.append(" (non-stacking)");
+            }
+        }
+        return new Value(sum).source(sumSource.toString());
+    }
+    
+    protected Integer sumAsIntsS(List<String> values, SumOption... options) {
+        return sumAsInts(values.stream().map(x -> new Value(x)).toList(), options).getIntValue();
+    }
+    
+    protected Double sumAsDOublesS(List<String> values, SumOption... options) {
+        return sumAsDoubles(values.stream().map(x -> new Value(x)).toList(), options).getDoubleValue();
     }
     
     protected int sumInts(List<Integer> values) {
@@ -372,7 +313,175 @@ public class BaseBuilder {
     }
     
     protected Value withSign(Value value) {
-        return new Value(withSign(value.getIntValue()), value.source);
+        return value.value(withSign(value.getIntValue()));
+    }
+    
+    //
+    
+    protected StatContext stat(String statName) {
+        stats.getOrCreateStat(statName);
+        return new StatContext(statName);
+    }
+    
+    protected static final class RootLeafOption {}
+    protected static final RootLeafOption root = new RootLeafOption();
+    protected static final RootLeafOption leaf = new RootLeafOption();
+    protected static final RootLeafOption rootleaf = new RootLeafOption();
+    
+    public final class StatContext {
+        
+        private String contextStatName;
+        
+        private StatContext(final String contextStatName) { 
+            this.contextStatName = contextStatName;
+        }
+        
+        //--
+        
+        /** the rule will not be called when the input is empty aka zero-values */
+        public StatContext to1(String outputStatName) {
+            return to1(outputStatName, value -> value);
+        }
+        
+        /** the rule will not be called when the input is empty aka zero-values */
+        public StatContext to1(String outputStatName, Value value) {
+            return to1(outputStatName, inputValue -> value);
+        }
+        
+        /** the rule will not be called when the input is empty aka zero-values */
+        public StatContext to1(String outputStatName, Function<Value, Value> rule) {
+            final Function<Map<String, ReadOnlyValuedStat>, List<Value>> rule2 = stats -> {
+                Optional<Value> inputValue = stats.get(contextStatName).val01();
+                if (inputValue.isEmpty())
+                    return Collections.emptyList();
+                Value outputValue = rule.apply(inputValue.get());
+                if (outputValue == null)
+                    return Collections.emptyList();
+                if (outputValue.source == null)
+                    outputValue = outputValue.source(contextStatName);
+                return Collections.singletonList(outputValue);
+            };
+            stats.input(outputStatName, Collections.singletonList(contextStatName), rule2);
+            return new StatContext(outputStatName);
+        }
+        
+        //--
+        
+        /** the rule will not be called when the input is empty aka zero-values */
+        public StatContext toN(String outputStatName) {
+            return toN(outputStatName, values -> values);
+        }
+        
+        /** the rule will not be called when the input is empty aka zero-values */
+        public StatContext toN(String outputStatName, Value value) {
+            return toN(outputStatName, values -> Collections.singletonList(value));
+        }
+        
+        /** the rule will not be called when the input is empty aka zero-values */
+        public StatContext toN(String outputStatName, Function<List<Value>, List<Value>> rule) {
+            final Function<Map<String, ReadOnlyValuedStat>, List<Value>> rule2 = stats -> {
+                List<Value> inputValues = stats.get(contextStatName).getValues();
+                if (inputValues.isEmpty())
+                    return Collections.emptyList();
+                List<Value> outputValues = rule.apply(inputValues);
+                if (outputValues == null)
+                    return Collections.emptyList();
+                outputValues = new ArrayList<>(outputValues);
+                for (int i = 0; i < outputValues.size(); ++i) {
+                    if (outputValues.get(i).source == null)
+                        outputValues.set(i, outputValues.get(i).source(contextStatName));
+                }
+                return outputValues;
+            };
+            stats.input(outputStatName, Collections.singletonList(contextStatName), rule2);
+            return new StatContext(outputStatName);
+        }
+        
+        //--
+        
+        /** Use the default agg rule that validates 0 or 1 num values. */
+        public StatContext agg() {
+            return agg((RootLeafOption)null);
+        }
+        
+        /** Use the default agg rule that validates 0 or 1 num values. */
+        public StatContext agg(RootLeafOption rootLeafOption) {
+            return agg(rootLeafOption, values -> {
+                if (values.size() == 0)
+                    return null;
+                if (values.size() == 1)
+                    return values.get(0);
+                throw new RuntimeException("implicit agg rule failed for stat " + contextStatName + ". Values: " + values);
+            });
+        }
+        
+        /** the rule will not be called when the input is empty aka zero-values */
+        public StatContext agg(Function<List<Value>, Value> rule) {
+            return agg(null, rule);
+        }
+        
+        /** the rule will not be called when the input is empty aka zero-values */
+        public StatContext agg(RootLeafOption rootLeafOption, Function<List<Value>, Value> rule) {
+            final Function<List<Value>, List<Value>> rule2 = values -> {
+                if (values == null)
+                    return null;
+                if (values.isEmpty())
+                    return values;
+                final Value agg = rule.apply(values);
+                if (agg == null)
+                    return Collections.emptyList();
+                return Collections.singletonList(agg);
+            };
+            stats.agg(contextStatName, rule2);
+            if (rootLeafOption == root || rootLeafOption == rootleaf)
+                stats.getStat(contextStatName).setRoot(true);
+            if (rootLeafOption == leaf || rootLeafOption == rootleaf)
+                stats.getStat(contextStatName).setLeaf(true);
+            return new StatContext(contextStatName);
+        }
+        
+        /** use no-op agg rule (disables implicit validate-one-value agg rule) */
+        public StatContext aggN() {
+            return aggN(null, values -> values);
+        }
+        
+        /** use a no-op agg-rule */
+        public StatContext aggN(RootLeafOption rootLeafOption) {
+            return aggN(rootLeafOption, values -> values);
+        }
+        
+        /** the rule will not be called when the input is empty aka zero-values */
+        public StatContext aggN(Function<List<Value>, List<Value>> rule) {
+            return aggN(null, rule);
+        }
+        
+        /** the rule will not be called when the input is empty aka zero-values */
+        public StatContext aggN(RootLeafOption rootLeafOption, Function<List<Value>, List<Value>> rule) {
+            final Function<List<Value>, List<Value>> rule2 = values -> {
+                if (values == null)
+                    return null;
+                if (values.isEmpty())
+                    return values;
+                values = rule.apply(values);
+                if (values == null)
+                    return null;
+                return values;
+            };
+            stats.agg(contextStatName, rule2);
+            if (rootLeafOption == root || rootLeafOption == rootleaf)
+                stats.getStat(contextStatName).setRoot(true);
+            if (rootLeafOption == leaf || rootLeafOption == rootleaf)
+                stats.getStat(contextStatName).setLeaf(true);
+            return new StatContext(contextStatName);
+        }
+
+        @SafeVarargs
+        public final void many(Consumer<StatContext>... actions) {
+            for (final Consumer<StatContext> action : actions) {
+                action.accept(this);
+            }
+        }
+        
     }
     
 }

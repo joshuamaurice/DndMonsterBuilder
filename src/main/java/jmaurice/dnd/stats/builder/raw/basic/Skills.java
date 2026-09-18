@@ -2,12 +2,12 @@ package jmaurice.dnd.stats.builder.raw.basic;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import jmaurice.dnd.stats.builder.BaseBuilder;
 import jmaurice.dnd.stats.impl.Stats;
 import jmaurice.dnd.stats.impl.Value;
+import jmaurice.dnd.stats.impl.ValuedStat;
 
 public class Skills extends BaseBuilder {
     
@@ -47,43 +47,99 @@ public class Skills extends BaseBuilder {
     public Skills(final Stats stats) { super(stats); }
 
     public void build() {
-        aggN("skills", leaf, values -> sort(values));
-        allSkills.forEach(skill -> to1("skills", skill, value -> new Value(skill + " " + withSign(value.getIntValue()), value.source)));
-        allSkills.forEach(skill -> to1(skill, "default", new Value(0)));
+        for (final String skill : allSkills) {
+            stat("default")
+            .to1(skill, new Value(0))
+            .agg(input -> sumAsInts(input))
+            .to1("skills", value -> new Value(skill + " " + withSign(value.getIntValue())));
+        }
+        stat("skills").aggN(leaf, values -> sort(values));
         
-        aggN("relevant skills", values -> sort(values));
-        allSkills.forEach(skill -> stats.input("relevant skills", Arrays.asList(skill, skill + " ranks"), stats -> {
-            final Value skillMod = stats.get(skill).val1();
-            final Integer skillRanks = stats.get(skill + " ranks").getIntValue();
-            if (skillRanks != null)
-                return Collections.singletonList(new Value(skill + " " + withSign(skillMod.getIntValue()), skillMod.source));
-            if (Arrays.asList("perception", "stealth").contains(skill))
-                return Collections.singletonList(new Value(skill + " " + withSign(skillMod.getIntValue()), skillMod.source));
-            return null;
-        }));
-        
-        allSkills.forEach(skill -> agg(skill + " class skill", root, input -> new Value(3, first(input).source))); //TODO remove root
-        allSkills.forEach(skill -> agg(skill + " ranks", root, input -> sumAsInts(input)));
-        allSkills.forEach(skill -> agg(skill, input -> sumAsInts(input)));
-        
-        allSkills.forEach(skill -> agg("max " + skill + " ranks", root));
-        allSkills.forEach(skill -> stats.input(skill + " ranks", Arrays.asList("max " + skill + " ranks", "num hit dice"), stats -> {
-            if (stats.get("max " + skill + " ranks").getValues().size() > 0)
-                return Collections.singletonList(new Value(stats.get("num hit dice").val1().getIntValue()));
-            return null;
-        }));
-        
-        allSkills.forEach(skill -> to1(skill, skill + " ranks",       input -> input.asInt().source("ranks")));
-        allSkills.forEach(skill -> to1(skill, skill + " class skill", input -> new Value(3, input.source + " class skill")));
-        strSkills.forEach(skill -> to1(skill, "strength modifier"));
-        dexSkills.forEach(skill -> to1(skill, "dexterity modifier"));
-        conSkills.forEach(skill -> to1(skill, "constitution modifier"));
-        intSkills.forEach(skill -> to1(skill, "intelligence modifier"));
-        wisSkills.forEach(skill -> to1(skill, "wisdom modifier"));
-        chaSkills.forEach(skill -> to1(skill, "charisma modifier"));
-        
-        to1("fly", "size modifier to fly");
-        to1("stealth", "size modifier to stealth");
+        stat("size modifier to fly").to1("fly");
+        stat("size modifier to stealth").to1("stealth");
+        relevantSkills();
+        skillRanks();
+        maxSkillRanks();
+        classSkill();
+        abilityScores();
+        otherBonuses();
+        racialSkillBonuses();
+    }
+    
+    private void relevantSkills() {
+        stat("relevant skills").aggN(values -> sort(values));
+        for (final String skill : allSkills) {
+            input1("relevant skills", Arrays.asList(skill, skill + " ranks"), stats -> {
+                final Value skillMod = stats.get(skill).val1();
+                final Integer skillRanks = stats.get(skill + " ranks").getIntValue();
+                if (skillRanks != null)
+                    return new Value(skill + " " + withSign(skillMod.getIntValue()));
+                if (Arrays.asList("perception", "stealth").contains(skill))
+                    return new Value(skill + " " + withSign(skillMod.getIntValue()));
+                return null;
+            });
+        }
+    }
+    
+    private void skillRanks() {
+        for (final String skill : allSkills) {
+            stat(skill + " ranks")
+            .agg(root, input -> sumAsInts(input))
+            .to1(skill, input -> input.asInt().source("ranks"));
+        }
+    }
+    
+    private void maxSkillRanks() {
+        for (final String skill : allSkills) {
+            stat("max " + skill + " ranks").agg(root);
+            input1(skill + " ranks", Arrays.asList("max " + skill + " ranks", "num hit dice"), stats -> {
+                if (stats.get("max " + skill + " ranks").getValues().size() > 0)
+                    return new Value(stats.get("num hit dice").val1().getIntValue());
+                return null;
+            });
+        }
+    }
+    
+    private void classSkill() {
+        for (final String skill : allSkills) {
+            stat(skill + " class skill")
+            .agg(root, input -> new Value(3).source(first(input).source)) //TODO remove root
+            .to1(skill, input -> new Value(3).source(input.source + " class skill"));
+        }
+    }
+    
+    private void abilityScores() {
+        strSkills.forEach(skill -> stat("strength modifier"    ).to1(skill));
+        dexSkills.forEach(skill -> stat("dexterity modifier"   ).to1(skill));
+        conSkills.forEach(skill -> stat("constitution modifier").to1(skill));
+        intSkills.forEach(skill -> stat("intelligence modifier").to1(skill));
+        wisSkills.forEach(skill -> stat("wisdom modifier"      ).to1(skill));
+        chaSkills.forEach(skill -> stat("charisma modifier"    ).to1(skill));
+    }
+    
+    private void otherBonuses() {
+        stat("skills bonus").aggN(root);
+        for (final String skill : allSkills) {
+            stat("skills bonus")
+            .toN(skill + " bonus")
+            .aggN()
+            .toN(skill);
+        }
+    }
+    
+    private void racialSkillBonuses() {
+        stat("racial skill bonuses").aggN(root, values -> sort(values));
+        for (final String skill : allSkills) {
+            stats.preAggX(skill, Arrays.asList("racial skill bonuses"), Arrays.asList(), (writableStats, readOnlyStats) -> {
+                final Value v = maxAsInts(writableStats.get(skill).getValues().stream().filter(x -> x.type.equals("racial")).toList());
+                if (v != null) {
+                    final ValuedStat racialSkillBonusesStat = writableStats.get("racial skill bonuses");
+                    final List<Value> racialSkillBonuses = new ArrayList<>(racialSkillBonusesStat.getValues());
+                    racialSkillBonuses.add(new Value(skill + " " + withSign(v.getIntValue())));
+                    racialSkillBonusesStat.setValues(racialSkillBonuses);
+                }
+            });
+        }
     }
 
 }

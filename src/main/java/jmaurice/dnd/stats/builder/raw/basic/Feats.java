@@ -11,60 +11,90 @@ public class Feats extends BaseBuilder {
     public Feats(final Stats stats) { super(stats); }
 
     public void build() {
-        aggN("feat", root, values -> values);
-        toN("feats", "feat", values -> values);
-        aggN("feats", values -> sort(values));
+        stat("feat")
+        .aggN(root, values -> sort(values))
+        .toN("feats")
+        .aggN(values -> sort(values));
         
-        aggN("epic feat", root, values -> values);
-        toN("epic feats", "epic feat", values -> values);
-        aggN("epic feats", values -> sort(values));
+        stat("epic feat")
+        .aggN(root, values -> sort(values))
+        .toN("epic feats")
+        .aggN(values -> sort(values));
         
-        to1("feats", "critical focus", root, new Value("critical focus"));
-        to1("feats", "crowded charge", root, new Value("crowded charge"));
-        to1("feats", "cunning feat", root, new Value("cunning"));
-        to1("feats", "death from above feat", root, new Value("death from above"));
-        to1("feats", "deadly aim", root, new Value("deadly aim"));
-        to1("feats", "dreadful carnage", root, new Value("dreadful carnage"));
-        to1("feats", "fleet of foot feat", root, new Value("fleet of foot"));
-        to1("feats", "furious focus", root, new Value("furious focus"));
+        stat("critical focus").agg(root).to1("feats", new Value("critical focus"));
+        stat("crowded charge").agg(root).to1("feats", new Value("crowded charge"));
+        stat("cunning feat").agg(root).to1("feats", new Value("cunning"));
+        stat("death from above feat").agg(root).to1("feats", new Value("death from above"));
+        stat("deadly aim").agg(root).to1("feats", new Value("deadly aim"));
+        stat("dreadful carnage").agg(root).to1("feats", new Value("dreadful carnage"));
+        stat("fleet of foot feat").agg(root).to1("feats", new Value("fleet of foot"));
+        stat("furious focus").agg(root).to1("feats", new Value("furious focus"));
         
-        to1("feats", "great fortitude", root, new Value("great fortitude"));
-        to1("fortitude", "great fortitude", new Value(2));
+        stat("great fortitude")
+        .agg(root)
+        .many(
+            x -> x.to1("feats", new Value("great fortitude")),
+            x -> x.to1("fortitude", new Value(2))
+        );
         
-        to1("feats", "greater weapon focus", root, value -> new Value("greater weapon focus (" + value.getStringValue() + ")"));
-        to1("weapon properties", "greater weapon focus", value -> new Value("name=" + value.getStringValue() + ",attack modifier=1"));
+        stat("greater weapon focus")
+        .agg(root)
+        .many(
+            x -> x.to1("feats", value -> new Value("greater weapon focus (" + value.getStringValue() + ")")),
+            x -> x.to1("weapon properties", value -> new Value("name=" + value.getStringValue() + ",attack modifier=1"))
+        );
         
-        to1("feats", "greater weapon specialization", root, value -> new Value("greater weapon specialization (" + value.getStringValue() + ")"));
-        to1("weapon properties", "greater weapon specialization", value -> new Value("name=" + value.getStringValue() + ",damage modifier=2"));
+        stat("greater weapon specialization")
+        .agg(root)
+        .many(
+            x -> x.to1("feats", value -> new Value("greater weapon specialization (" + value.getStringValue() + ")")),
+            x -> x.to1("weapon properties", value -> new Value("name=" + value.getStringValue() + ",damage modifier=2"))
+        );
         
-        to1("feats", "impaling critical", root, new Value("impaling critical"));
-        to1("feats", "improved impaling critical", root, new Value("improved impaling critical"));
+        stat("impaling critical").agg(root).to1("feats", new Value("impaling critical"));
+        stat("improved impaling critical").agg(root).to1("feats", new Value("improved impaling critical"));
         
-        to1("feats", "improved critical", root, value -> new Value("improved critical (" + value.getStringValue() + ")"));
-        to1("weapon properties", "improved critical", value -> new Value("name=" + value.getStringValue() + ",improved critical"));
+        stat("improved critical")
+        .agg(root)
+        .many(
+            x -> x.to1("feats", value -> new Value("improved critical (" + value.getStringValue() + ")")),
+            x -> x.to1("weapon properties", value -> new Value("name=" + value.getStringValue() + ",improved critical"))
+        );
         
-        to1("feats", "improved initiative", root, new Value("improved initiative"));
-        to1("initiative", "improved initiative", new Value(4));
+        stat("improved initiative")
+        .agg(root)
+        .many(
+            x -> x.to1("feats", new Value("improved initiative")),
+            x -> x.to1("initiative", new Value(4))
+        );
         
-        to1("feats", "improved bull rush", root, new Value("improved bull rush"));
+        stat("improved bull rush").agg(root).to1("feats", new Value("improved bull rush"));
         
-        to1("feats", "iron will", root, new Value("iron will"));
-        to1("will", "iron will", new Value(2));
+        stat("iron will")
+        .agg(root)
+        .many(
+            x -> x.to1("feats", new Value("iron will")),
+            x -> x.to1("will", new Value(2))
+        );
         
-        to1("feats", "lightning reflexes", root, new Value("lightning reflexes"));
-        to1("reflex", "lightning reflexes", new Value(2));
+        stat("lightning reflexes")
+        .agg(root)
+        .many(
+            x -> x.to1("feats", new Value("lightning reflexes")),
+            x -> x.to1("reflex", new Value(2))
+        );
         
-        to1("feats", "lightning stance feat", root, new Value("lightning stance"));
-        to1("feats", "point-blank shot", root, new Value("point-blank shot"));
-        to1("feats", "power attack", root, new Value("power attack"));
-        to1("feats", "precise shot", root, new Value("precise shot"));
-        to1("feats", "quiet death feat", root, new Value("quiet death"));
-        to1("feats", "rhino charge feat", root, new Value("rhino charge"));
-        to1("feats", "run feat", root, new Value("run"));
+        stat("lightning stance feat").agg(root).to1("feats", new Value("lightning stance"));
+        stat("point-blank shot").agg(root).to1("feats", new Value("point-blank shot"));
+        stat("power attack").agg(root).to1("feats", new Value("power attack"));
+        stat("precise shot").agg(root).to1("feats", new Value("precise shot"));
+        stat("quiet death feat").agg(root).to1("feats", new Value("quiet death"));
+        stat("rhino charge feat").agg(root).to1("feats", new Value("rhino charge"));
+        stat("run feat").agg(root).to1("feats", new Value("run"));
         
-        Skills.allSkills.forEach(skill -> to1("feats", "skill focus " + skill, root, new Value("skill focus (" + skill + ")")));
-        Skills.allSkills.forEach(skill -> input(skill, Arrays.asList("skill focus " + skill, skill + " ranks"), stats -> {
-            if ( ! stats.get("skill focus " + skill).getBooleanValue(false))
+        Skills.allSkills.forEach(skill -> stat("skill focus " + skill).agg(root).to1("feats", new Value("skill focus (" + skill + ")")));
+        Skills.allSkills.forEach(skill -> input1(skill, Arrays.asList("skill focus " + skill, skill + " ranks"), stats -> {
+            if (stats.get("skill focus " + skill).getValues().size() == 0)
                 return null;
             final Integer ranks = stats.get(skill + " ranks").getIntValue();
             if (ranks != null && ranks >= 10)
@@ -72,13 +102,21 @@ public class Feats extends BaseBuilder {
             return new Value(3);
         }));
         
-        to1("feats", "weapon focus", root, value -> new Value("weapon focus (" + value.getStringValue() + ")"));
-        to1("weapon properties", "weapon focus", value -> new Value("name=" + value.getStringValue() + ",attack modifier=1"));
+        stat("weapon focus")
+        .agg(root)
+        .many(
+            x -> x.to1("feats", value -> new Value("weapon focus (" + value.getStringValue() + ")")),
+            x -> x.to1("weapon properties", value -> new Value("name=" + value.getStringValue() + ",attack modifier=1"))
+        );
         
-        to1("feats", "weapon specialization", root, value -> new Value("weapon specialization (" + value.getStringValue() + ")"));
-        to1("weapon properties", "weapon specialization", value -> new Value("name=" + value.getStringValue() + ",damage modifier=2"));
+        stat("weapon specialization")
+        .agg(root)
+        .many(
+            x -> x.to1("feats", value -> new Value("weapon specialization (" + value.getStringValue() + ")")),
+            x -> x.to1("weapon properties", value -> new Value("name=" + value.getStringValue() + ",damage modifier=2"))
+        );
         
-        to1("feats", "wind stance feat", root, new Value("wind stance"));
+        stat("wind stance feat").agg(root).to1("feats", new Value("wind stance"));
     }
 
 }

@@ -2,11 +2,12 @@ package jmaurice.dnd.stats.builder.raw.basic;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import jmaurice.dnd.stats.builder.BaseBuilder;
+import jmaurice.dnd.stats.impl.ReadOnlyValuedStat;
 import jmaurice.dnd.stats.impl.Stats;
 import jmaurice.dnd.stats.impl.Value;
 
@@ -47,6 +48,7 @@ public class StatBlocks extends BaseBuilder {
             "natural armor bonus",
             "power resistance",
             "race",
+            "racial skill bonuses",
             "reach",
             "reflex",
             "relevant skills",
@@ -74,8 +76,8 @@ public class StatBlocks extends BaseBuilder {
     }
     
     private void statBlock35ShortForm() {
-        agg("stat block 3.5 short-form", leaf);
-        input("stat block 3.5 short-form", inputStatNames, stats -> {
+        stat("stat block 3.5 short-form").agg(leaf);
+        input1("stat block 3.5 short-form", inputStatNames, stats -> {
             final StringBuilder r = new StringBuilder();
             
             //TODO class levels
@@ -112,7 +114,7 @@ public class StatBlocks extends BaseBuilder {
                     stats.get("base attack bonus").getIntValue()
                     + stats.get("epic base attack bonus").val01().map(x -> x.getIntValue()).orElse(0)));
             r.append(", CMB ").append(withSign(stats.get("combat maneuvers bonus").getIntValue()));
-            r.append("; Full Atk ").append(stats.get("attack routine").getStringValue());
+            r.append("; Full Atk ").append(join(stats.get("attack routine")).map(x -> x.getStringValue()).orElse(null));
             r.append("; Space/Reach ");
             r.append(stats.get("space").getStringValue());
             r.append("/");
@@ -128,7 +130,7 @@ public class StatBlocks extends BaseBuilder {
             join(stats.get("immunities")).ifPresent(x -> r.append("immune (").append(x.getStringValue()).append(")"));
             join(stats.get("resistances")).ifPresent(x -> r.append("resist (").append(x.getStringValue()).append(")"));
             join(stats.get("weaknesses")).ifPresent(x -> r.append("weaknesses (").append(x.getStringValue()).append(")"));
-            Collections.sort(specialAbilitiesShort);
+            sortS(specialAbilitiesShort, stripHyperLinkS);
             r.append(specialAbilitiesShort.stream().collect(Collectors.joining(", ")));
             
             r.append(";");
@@ -173,8 +175,8 @@ public class StatBlocks extends BaseBuilder {
     }
     
     private void statBlockPFSRD() {
-        agg("stat block PFSRD", leaf);
-        input("stat block PFSRD", inputStatNames, stats -> {
+        stat("stat block PFSRD").agg(leaf);
+        input1("stat block PFSRD", inputStatNames, stats -> {
             final StringBuilder r = new StringBuilder();
             
             //TODO class levels
@@ -197,14 +199,13 @@ public class StatBlocks extends BaseBuilder {
             r.append("<br/>");
             
             r.append("<b>Init</b> ").append(withSign(stats.get("initiative").getIntValue()));
-            r.append(" (");
-            r.append(stats.get("initiative").val1().source);
-            r.append(")");
+            Optional.ofNullable(stats.get("initiative").val1().source).map(x -> x.isBlank() ? null : x)
+                    .ifPresent(x -> r.append(" <i>(").append(x).append(")</i>"));
             join(stats.get("senses")).ifPresent(x -> r.append("; <b>Senses</b> ").append(x.getStringValue()));
             join(stats.get("auras")).ifPresent(x -> r.append("; <b>Aura</b> ").append(x.getStringValue()));
             r.append("<br/>");
             
-            r.append("<span style=\"color: blue;\"><i>DEFENSE</i></span>");
+            r.append("<span style=\"color: purple;\"><i>DEFENSE</i></span>");
             r.append("<br/>");
             
             r.append("<b>AC</b> ").append(stats.get("armor class").getIntValue());
@@ -212,9 +213,7 @@ public class StatBlocks extends BaseBuilder {
             r.append(" touch ").append(stats.get("touch armor class").getIntValue());
             r.append(",");
             r.append(" flat-footed ").append(stats.get("flat-footed armor class").getIntValue());
-            r.append(" (");
-            r.append(stats.get("armor class").val1().source);
-            r.append(")");
+            stats.get("armor class").val01().map(x -> x.source).ifPresent(x -> r.append(" <i>(").append(x).append(")</i>"));
             r.append("<br/>");
             
             r.append("<b>hp</b> ").append(stats.get("hit points").getIntValue());
@@ -238,17 +237,17 @@ public class StatBlocks extends BaseBuilder {
             }
             
             final StringBuilder defenses2 = new StringBuilder();
-            join(stats.get("defensive abilities")).ifPresent(x -> defenses2.append("; <b>Defensive Abilities</b> ").append(x.getStringValue()));
-            join(stats.get("immunities")).ifPresent(x -> defenses2.append("; <b>Immune</b> ").append(x.getStringValue()));
-            join(stats.get("resistances")).ifPresent(x -> defenses2.append("; <b>Resist</b> ").append(x.getStringValue()));
+            join(sort(stats.get("defensive abilities"), stripHyperLink)).ifPresent(x -> defenses2.append("; <b>Defensive Abilities</b> ").append(x.getStringValue()));
+            join(sort(stats.get("immunities"), stripHyperLink)).ifPresent(x -> defenses2.append("; <b>Immune</b> ").append(x.getStringValue()));
+            joinWithType(sort(stats.get("resistances"), x -> x.type)).ifPresent(x -> defenses2.append("; <b>Resist</b> ").append(x.getStringValue()));
             if ( ! defenses2.isEmpty()) {
                 r.append(defenses2.toString().substring(2));
                 r.append("<br/>");
             }
             
-            join(stats.get("weaknesses")).ifPresent(x -> r.append("; <b>Weaknessesk</b> ").append(x.getStringValue()).append("<br/>"));
+            join(sort(stats.get("weaknesses"), stripHyperLink)).ifPresent(x -> r.append("; <b>Weaknessesk</b> ").append(x.getStringValue()).append("<br/>"));
             
-            r.append("<span style=\"color: blue;\"><i>OFFENSE</i></span>");
+            r.append("<span style=\"color: purple;\"><i>OFFENSE</i></span>");
             r.append("<br/>");
             
             join(stats.get("speeds")).ifPresent(x -> r.append("<b>Spd</b> ").append(x.getStringValue()).append("<br/>"));
@@ -259,22 +258,30 @@ public class StatBlocks extends BaseBuilder {
             r.append("; <b>Reach</b> ").append(stats.get("reach").getStringValue());
             r.append("<br/>");
             
-            join(stats.get("special abilities short")).ifPresent(x -> r.append("<b>Special Abilities</b> ").append(x.getStringValue()).append("<br/>"));
+            join(sort(stats.get("special abilities short").getValues(), stripHyperLink)).ifPresent(x -> r.append("<b>Special Abilities</b> ").append(x.getStringValue()).append("<br/>"));
             
             //TODO SLAs
             
             //TODO spells
             
-            r.append("<span style=\"color: blue;\"><i>STATISTICS</i></span>");
+            r.append("<span style=\"color: purple;\"><i>STATISTICS</i></span>");
             r.append("<br/>");
             
-            r.append("<b>Str</b> ").append(stats.get("strength").getIntValue());
-            r.append(", <b>Dex</b> ").append(stats.get("dexterity").getIntValue());
-            r.append(", <b>Con</b> ").append(stats.get("constitution").getIntValue());
-            r.append(", <b>Int</b> ").append(stats.get("intelligence").getIntValue());
-            r.append(", <b>Wis</b> ").append(stats.get("wisdom").getIntValue());
-            r.append(", <b>Cha</b> ").append(stats.get("charisma").getIntValue());
-            r.append("<br/>");
+            for (int i = 0; i < 6; ++i) {
+                final String statName = Arrays.asList("strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma").get(i);
+                final String outputName = Arrays.asList("Str", "Dex", "Con", "Int", "Wis", "Cha").get(i);
+                final Value statValue = stats.get(statName).val01().orElse(null);
+                r.append("<b>").append(outputName).append("</b> ");
+                if (statValue != null) {
+                    r.append(statValue.getIntValue());
+                    if (statValue.source != null && ! statValue.source.isBlank()) {
+                        r.append(" <i>(").append(statValue.source).append(")</i>");
+                    }
+                } else {
+                    r.append("-");
+                }
+                r.append("<br/>");
+            }
             
             r.append("<b>Base Atk</b> ").append(withSign(
                     stats.get("base attack bonus").getIntValue()
@@ -285,20 +292,108 @@ public class StatBlocks extends BaseBuilder {
             
             join(stats.get("feats")).ifPresent(x -> r.append("<b>Feats</b> ").append(x.getStringValue()).append("<br/>"));
             join(stats.get("epic feats")).ifPresent(x -> r.append("<b>Epic Feats</b> ").append(x.getStringValue()).append("<br/>"));
-            join(stats.get("relevant skills")).ifPresent(x -> r.append("<b>Skills</b> ").append(x.getStringValue()).append("<br/>"));
+            
+            r.append("<b>Skills</b> ").append(join(stats.get("relevant skills")).get().getStringValue());
+            join(stats.get("racial skill bonuses")).ifPresent(x -> r.append("; <b>Racial</b> ").append(x.getStringValue()));
+            r.append("<br/>");
+            
             join(stats.get("languages")).ifPresent(x -> r.append("<b>Languages</b> ").append(x.getStringValue()).append("<br/>"));
             join(stats.get("equipment")).ifPresent(x -> r.append("<b>Equipment</b> ").append(x.getStringValue()).append("<br/>"));
 
-            join(stats.get("special abilities long")).ifPresent(x -> {
-                r.append("<span style=\"color: blue;\"><i>SPECIAL ABILITIES</i></span>");
+            if (stats.get("special abilities long").getValues().size() > 0) {
+                r.append("<span style=\"color: purple;\"><i>SPECIAL ABILITIES</i></span>");
                 r.append("<br/>");
-                r.append(x.getStringValue());
-                r.append("<br/>");
-            });
+                for (final Value value : sort(stats.get("special abilities long").getValues(), x -> x.getStringValue())) {
+                    final String s = value.getStringValue()
+                            .replaceAll("<li> *", "<li>")
+                            .replaceAll("</li> *", "</li>")
+                            .replaceAll("<ul> *", "<ul>")
+                            .replaceAll("</ul> *</li>", "</ul></li>")
+                            .replaceAll("<br/> {4,}", "<br>&nbsp;&nbsp;&nbsp;&nbsp;")
+                            .replaceAll("</ul> {4,}", "</ul>&nbsp;&nbsp;&nbsp;&nbsp;")
+                            .replaceAll("([^> ]) +", "$1 ")
+                            .replaceAll("^ *", "")
+                            .replaceAll(" *$", "")
+                            ;
+                    r.append(s);
+                    if ( ! s.endsWith("<br/>") && ! s.endsWith("</ul>"))
+                        r.append("<br/>");
+                }
+            }
             
             final String r2 = r.toString();
             return new Value(r2.substring(0, r2.length() - 5));
         });
     }
+    
+    protected static Optional<Value> join(List<Value> values) {
+        return join(values, ", ");
+    }
+    
+    protected static Optional<Value> join(List<Value> values, String delimiter) {
+        if (values.isEmpty())
+            return Optional.empty();
+        final StringBuilder r = new StringBuilder();
+        for (Value value : values) {
+            if ( ! r.isEmpty())
+                r.append(delimiter);
+            r.append(value.getStringValue().trim());
+        }
+        final String r2 = r.toString().replaceAll("^( *,)* *", "").replaceAll("( *,)* *$", "");
+        if (r2.isEmpty())
+            return Optional.empty();
+        return Optional.of(new Value(r2));
+    }
 
+    protected static Optional<Value> joinWithSource(List<Value> values) {
+        return joinWithSource(values, ", ");
+    }
+    
+    protected static Optional<Value> joinWithSource(List<Value> values, String delimiter) {
+        if (values.isEmpty())
+            return Optional.empty();
+        final StringBuilder r = new StringBuilder();
+        for (Value value : values) {
+            if ( ! r.isEmpty())
+                r.append(delimiter);
+            r.append(value.getStringValue().trim());
+            if (value.source != null && ! value.source.isBlank() && ! value.source.equals("default"))
+                r.append(" ").append(value.source);
+            else
+                r.append(" ").append(value.type);
+        }
+        final String r2 = r.toString().replaceAll("^( *,)* *", "").replaceAll("( *,)* *$", "");
+        if (r2.isEmpty())
+            return Optional.empty();
+        return Optional.of(new Value(r2));
+    }
+
+    protected static Optional<Value> joinWithType(List<Value> values) {
+        return joinWithType(values, ", ");
+    }
+    
+    protected static Optional<Value> joinWithType(List<Value> values, String delimiter) {
+        if (values.isEmpty())
+            return Optional.empty();
+        final StringBuilder r = new StringBuilder();
+        for (Value value : values) {
+            if ( ! r.isEmpty())
+                r.append(delimiter);
+            r.append(value.getStringValue().trim());
+            r.append(" ").append(value.type);
+        }
+        final String r2 = r.toString().replaceAll("^( *,)* *", "").replaceAll("( *,)* *$", "");
+        if (r2.isEmpty())
+            return Optional.empty();
+        return Optional.of(new Value(r2));
+    }
+
+    protected Optional<Value> join(ReadOnlyValuedStat stat) {
+        return join(stat.getValues(), ", ");
+    }
+    
+    protected Optional<Value> join(ReadOnlyValuedStat stat, String delimiter) {
+        return join(stat.getValues(), delimiter);
+    }
+    
 }

@@ -14,8 +14,9 @@ public class ParseCreatureInput {
     
     private static Pattern numberPattern = Pattern.compile("^[-+0-9.]+$");
     private static Pattern p1 = Pattern.compile("^ *([^()\"]+) *$");
-    private static Pattern p2 = Pattern.compile("^ *\"([^\"]*)\" +([^()\"]+)(?: +\\(([^()\"]*)\\))? *$");
-    private static Pattern p3 = Pattern.compile("^ *([^\" ]+) +([^()\"]+)(?: +\\(([^()\"]*)\\))? *$");
+    private static Pattern p2 = Pattern.compile("^ *\"(.*)\" +([^()\"]+)(?: +\\(([^()\"]*)\\))? *$");
+    private static Pattern p3 = Pattern.compile("^ *([^\"() ]+) +([^()\"]+)(?: +\\(([^()\"]*)\\))? *$");
+    private static Pattern p4 = Pattern.compile("^ *([-+0-9.]+) +([^()\" ]+) +([^()\"]+)(?: +\\(([^()\"]*)\\))? *$");
     
     public static void parseApply(final Map<String, ValuedStat> stats, String input1) {
         if (input1 == null)
@@ -41,7 +42,7 @@ public class ParseCreatureInput {
                     final String name = input3.trim();
                     final ValuedStat stat = stats.get(name);
                     if (stat != null) {
-                        stat.addInitialValue(new Value(true, "input"));
+                        stat.addInitialValue(new Value(true).source("input"));
                         continue;
                     }
                 }
@@ -53,7 +54,7 @@ public class ParseCreatureInput {
                     final ValuedStat stat = stats.get(name);
                     if (stat == null)
                         throw new RuntimeException("unrecognized stat name: " + name);
-                    stat.addInitialValue(new Value(value, source));
+                    stat.addInitialValue(new Value(value).source(source));
                     continue;
                 }
                 matcher = p3.matcher(input3);
@@ -63,7 +64,19 @@ public class ParseCreatureInput {
                     final String source = Optional.ofNullable(matcher.group(3)).orElse("input").trim();
                     final ValuedStat stat = stats.get(name);
                     if (stat != null) {
-                        stat.addInitialValue(new Value(value, source));
+                        stat.addInitialValue(new Value(value).source(source));
+                        continue;
+                    }
+                }
+                matcher = p4.matcher(input3);
+                if (matcher.matches()) {
+                    final String name = matcher.group(3).trim();
+                    final String value = matcher.group(1);
+                    final String type = matcher.group(2);
+                    final String source = Optional.ofNullable(matcher.group(4)).orElse("input").trim();
+                    final ValuedStat stat = stats.get(name);
+                    if (stat != null) {
+                        stat.addInitialValue(new Value(value).type(type).source(source));
                         continue;
                     }
                 }

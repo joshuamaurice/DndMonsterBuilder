@@ -14,7 +14,8 @@ public class HitDiceHitPoints extends BaseBuilder {
     public HitDiceHitPoints(final Stats stats) { super(stats); }
 
     public void build() {
-        agg("hit dice", leaf, values -> {
+        stat("hit dice")
+        .agg(values -> {
             final Map<Integer, Integer> aggregated = new TreeMap<>();
             values.forEach(x -> {
                 aggregated.compute(x.regexExtract("^[0-9]+d([0-9]+)$").getIntValue(), (Integer k, Integer v) -> {
@@ -34,27 +35,34 @@ public class HitDiceHitPoints extends BaseBuilder {
             }
             return new Value(v.toString());
         });
-        agg("num hit dice", values -> sumAsInts(values));
-        toN("num hit dice", "hit dice", values -> {
+        
+        stat("hit dice")
+        .toN("num hit dice", values -> {
             return val01(values).stream()
                     .flatMap(x -> x.split("\\+").stream())
                     .map(x -> x.regexExtract("^([0-9]+)d[0-9]+$"))
                     .toList();
-        });
-        agg("hit points", leaf, values -> sumAsInts(values));
-        input("hit points", Arrays.asList("constitution modifier", "num hit dice"), stats -> {
+        })
+        .agg(values -> sumAsInts(values));
+        
+        stat("hit points")
+        .agg(values -> sumAsInts(values));
+        
+        input1("hit points", Arrays.asList("constitution modifier", "num hit dice"), stats -> {
             final Integer constitutionModifier = stats.get("constitution modifier").getIntValue();
             if (constitutionModifier == null)
                 return null;
             final Integer numHitDice = stats.get("num hit dice").getIntValue();
             if (numHitDice == null)
                 return null;
-            return new Value(numHitDice * constitutionModifier, "con");
+            return new Value(numHitDice * constitutionModifier).source("con");
         });
-        toN("hit points", "hit dice", value -> {
+        
+        stat("hit dice")
+        .toN("hit points", value -> {
             return Collections.singletonList(sumAsInts(val01(value).stream()
                     .flatMap(x -> x.split("\\+").stream())
-                    .map(x -> x.regexExtract("^([0-9]+)d[0-9]+$").mult((x.regexExtract("^[0-9]+d([0-9]+)$").getIntValue() + 1.0) * 0.5))
+                    .map(x -> x.regexExtract("^([0-9]+)d[0-9]+$").mult((x.regexExtract("^[0-9]+d([0-9]+)$").getIntValue() / 2) + 1).floor())
                     .toList()).source("hit dice"));
         });
     }

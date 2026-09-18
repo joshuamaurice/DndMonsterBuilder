@@ -11,12 +11,13 @@ public class Tyranids extends BaseBuilder {
     public Tyranids(final Stats stats) { super(stats); }
 
     public void build() {
-        agg("tyranid", root);
-        agg("synapse", root);
-        agg("bio-titan", root);
-        to1("creature type", "tyranid", input -> new Value("aberration", "tyranid"));
-        to1("creature subtypes", "tyranid", input -> new Value("tyranid"));
-        input("high attack DC", Arrays.asList("intelligence modifier", "psionic manifester level"), stats -> {
+        stat("tyranid").agg(root);
+        stat("synapse").agg(root);
+        stat("bio-titan").agg(root);
+        
+        stat("tyranid").to1("creature type", input -> new Value("aberration").source("tyranid"));
+        stat("tyranid").to1("creature subtypes", input -> new Value("tyranid"));
+        input1("high attack DC", Arrays.asList("intelligence modifier", "psionic manifester level"), stats -> {
             final Integer psionicManifesterLevel = stats.get("psionic manifester level").getIntValue();
             if (psionicManifesterLevel == null)
                 return null;
@@ -32,8 +33,8 @@ public class Tyranids extends BaseBuilder {
     }
     
     private void naturalArmor() {
-        input("natural armor bonus", Arrays.asList("tyranid", "size"), stats -> {
-            if ( ! stats.get("tyranid").getBooleanValue(false))
+        input1("natural armor bonus", Arrays.asList("tyranid", "size"), stats -> {
+            if (stats.get("tyranid").getValues().size() == 0)
                 return null;
             final String size = stats.get("size").getStringValue();
             final int x = switch (size) {
@@ -47,24 +48,28 @@ public class Tyranids extends BaseBuilder {
                 case "colossal-plus" -> 20;
                 default -> throw new RuntimeException("unrecognized size value >>" + size + "<<");
             };
-            return new Value(x, "size");
+            return new Value(x).source("size");
         });
-        input("natural armor bonus", Arrays.asList("tyranid", "aberration hit dice"), stats -> {
-            if ( ! stats.get("tyranid").getBooleanValue(false))
+        input1("natural armor bonus", Arrays.asList("tyranid", "aberration hit dice"), stats -> {
+            if (stats.get("tyranid").getValues().size() == 0)
                 return null;
             final Integer numHitDice = stats.get("aberration hit dice").getIntValue();
             if (numHitDice == null)
                 return null;
-            return new Value(numHitDice, "advancement").mult(0.5).floor();
+            return new Value(numHitDice).source("advancement").mult(0.5).floor();
         });
     }
     
     private void tyranidSpecialAbilities() {
-        to1("special abilities long", "blistering assault", root, new Value("<b>Blistering Assault:</b> +3 bonus on attack rolls for charge attacks."));
+        stat("blistering assault").agg(root).to1("special abilities long", new Value("<b>Blistering Assault:</b> +3 bonus on attack rolls for charge attacks."));
         
-        to1("special abilities long", "tyranid enhanced senses", root, new Value("<b>Enhanced Senses:</b> +3 racial bonus to ranged attack rolls and +8 racial bonus to Perception."));
-        to1("global range attack modifiers", "tyranid enhanced senses", new Value(3));
-        to1("perception", "tyranid enhanced senses", new Value(8));
+        stat("tyranid enhanced senses")
+        .agg(root)
+        .many(
+            x -> x.to1("special abilities long", new Value("<b>Enhanced Senses:</b> +3 racial bonus to ranged attack rolls and +8 racial bonus to Perception.")),
+            x -> x.to1("global range attack modifiers", new Value("3").type("racial")),
+            x -> x.to1("perception", new Value("8").type("racial"))
+        );
     }
     
 }

@@ -1,7 +1,6 @@
 package jmaurice.dnd.stats.builder.raw.basic;
 
 import java.util.Arrays;
-import java.util.List;
 
 import jmaurice.dnd.stats.builder.BaseBuilder;
 import jmaurice.dnd.stats.impl.Stats;
@@ -12,67 +11,81 @@ public class ArmorClass extends BaseBuilder {
     public ArmorClass(final Stats stats) { super(stats); }
 
     public void build() {
-        agg("armor class",                          leaf, values -> sumAsInts(sort(values), SkipZero));
-        agg("touch armor class",                    leaf, values -> sumAsInts(sort(values), SkipZero));
-        agg("combat maneuvers defense",             leaf, values -> sumAsInts(sort(values), SkipZero));
-        agg("flat-footed armor class",              leaf, values -> sumAsInts(sort(values), SkipZero));
-        agg("flat-footed touch armor class",        leaf, values -> sumAsInts(sort(values), SkipZero));
-        agg("flat-footed combat maneuvers defense", leaf, values -> sumAsInts(sort(values), SkipZero));
-        
-        to1("armor class",                          "default", new Value(10));
-        to1("touch armor class",                    "default", new Value(10));
-        to1("combat maneuvers defense",             "default", new Value(10));
-        to1("flat-footed armor class",              "default", new Value(10));
-        to1("flat-footed touch armor class",        "default", new Value(10));
-        to1("flat-footed combat maneuvers defense", "default", new Value(10));
-        
-        to1("armor class",                          "size modifier to attack", value -> value.source("size"));
-        to1("touch armor class",                    "size modifier to attack", value -> value.source("size"));
-        to1("combat maneuvers defense",             "size modifier to attack", value -> value.mult(-1).source("size"));
-        to1("flat-footed armor class",              "size modifier to attack", value -> value.source("size"));
-        to1("flat-footed touch armor class",        "size modifier to attack", value -> value.source("size"));
-        to1("flat-footed combat maneuvers defense", "size modifier to attack", value -> value.mult(-1).source("size"));
-        
-        to1("combat maneuvers defense",             "base attack bonus", value -> value.source("base attack bonus"));
-        to1("flat-footed combat maneuvers defense", "base attack bonus", value -> value.source("base attack bonus"));
-        to1("combat maneuvers defense",             "epic base attack bonus", value -> value.source("epic base attack bonus"));
-        to1("flat-footed combat maneuvers defense", "epic base attack bonus", value -> value.source("epic base attack bonus"));
-        
-        to1("combat maneuvers defense",             "strength modifier", value -> value.source("str"));
-        to1("flat-footed combat maneuvers defense", "strength modifier", value -> value.source("str"));
-        
-        to1("armor class",                          "dexterity modifier", value -> value.source("dex"));
-        to1("touch armor class",                    "dexterity modifier", value -> value.source("dex"));
-        to1("combat maneuvers defense",             "dexterity modifier", value -> value.source("dex"));
-        to1("flat-footed armor class",              "dexterity penalty", value -> value.getIntValue() < 0 ? value.source("dex") : null);
-        to1("flat-footed touch armor class",        "dexterity penalty", value -> value.getIntValue() < 0 ? value.source("dex") : null);
-        to1("flat-footed combat maneuvers defense", "dexterity penalty", value -> value.getIntValue() < 0 ? value.source("dex") : null);
-        
+        for (final String type : Arrays.asList("armor class", "touch armor class", "combat maneuvers defense")) {
+            for (final boolean flatFooted : Arrays.asList(false, true)) {
+                stat("default")
+                .to1((flatFooted ? "flat-footed " : "") + type, new Value(10).source("default"))
+                .agg(leaf, values -> sumAsInts(sort(values, value -> value.source), skipZero));
+            }
+        }
+        size();
+        baseAttack();
+        str();
+        dex();
         armorShieldNaturalArmor();
         otherBonuses();
     }
     
+    private void size() {
+        for (final String type : Arrays.asList("armor class", "touch armor class")) {
+            for (final boolean flatFooted : Arrays.asList(false, true)) {
+                stat("size modifier to attack")
+                .to1((flatFooted ? "flat-footed " : "") + type, value -> value.source("size"));
+            }
+        }
+        for (final boolean flatFooted : Arrays.asList(false, true)) {
+            stat("size modifier to attack")
+            .to1((flatFooted ? "flat-footed " : "") + "combat maneuvers defense", value -> value.mult(-1).source("size"));
+        }
+    }
+    
+    private void baseAttack() {
+        stat("base attack bonus").to1("combat maneuvers defense",             value -> value.source("base attack bonus"));
+        stat("base attack bonus").to1("flat-footed combat maneuvers defense", value -> value.source("base attack bonus"));
+        stat("epic base attack bonus").to1("combat maneuvers defense",             value -> value.source("epic base attack bonus"));
+        stat("epic base attack bonus").to1("flat-footed combat maneuvers defense", value -> value.source("epic base attack bonus"));
+    }
+    
+    private void str() {
+        stat("strength modifier").to1("combat maneuvers defense",             value -> value.source("str"));
+        stat("strength modifier").to1("flat-footed combat maneuvers defense", value -> value.source("str"));
+    }
+    
+    private void dex() {
+        for (final String type : Arrays.asList("armor class", "touch armor class", "combat maneuvers defense")) {
+            for (final boolean flatFooted : Arrays.asList(false, true)) {
+                if (flatFooted) {
+                    stat("dexterity penalty").to1("flat-footed " + type, value -> value.source("dex"));
+                } else {
+                    stat("dexterity modifier").to1(type, value -> value.source("dex"));
+                }
+            }
+        }
+    }
+    
     private void armorShieldNaturalArmor() {
-        final List<String> bonusTypes = Arrays.asList("armor bonus to armor class", "shield bonus to armor class", "natural armor bonus");
-        bonusTypes.forEach(type -> agg(type, root, values -> sumAsInts(values))); //TODO no stacking
-        bonusTypes.forEach(type -> to1("armor class",             type, value -> value.source(type)));
-        bonusTypes.forEach(type -> to1("flat-footed armor class", type, value -> value.source(type)));
+        for (final String type : Arrays.asList("armor", "shield", "natural armor")) {
+            //TODO prevent stacking of multiple sources of armor, etc for shield and natural armor
+            stat(type + " bonus")
+            .agg(root, values -> sumAsInts(sort(values, value -> value.source), skipZero))
+            .many(
+                x -> x.to1("armor class", value -> value.type(type).source(type + " (" + value.source + ")")),
+                x -> x.to1("flat-footed armor class", value -> value.type(type).source(type + " (" + value.source + ")"))
+            );
+        }
     }
     
     private void otherBonuses() {
-        final List<String> bonusTypes = Arrays.asList("deflection", "dodge", "luck", "divine", "profane", "sacred");
-        final List<String> noStackBonusTypes = Arrays.asList("deflection", "luck", "divine", "profane", "sacred");
-        
-        noStackBonusTypes.forEach(type -> agg(type + " bonus to armor class", root, values -> maxAsInts(values)));
-        agg("dodge bonus to armor class", root, values -> sumAsInts(values));
-        
-        bonusTypes.forEach(type -> to1("armor class",                          type + " bonus to armor class", value -> value.source(type)));
-        bonusTypes.forEach(type -> to1("touch armor class",                    type + " bonus to armor class", value -> value.source(type)));
-        bonusTypes.forEach(type -> to1("combat maneuvers defense",             type + " bonus to armor class", value -> value.source(type)));
-        bonusTypes.forEach(type -> to1("flat-footed armor class",              type + " bonus to armor class", value -> value.source(type)));
-        bonusTypes.forEach(type -> to1("flat-footed touch armor class",        type + " bonus to armor class", value -> value.source(type)));
-        bonusTypes.forEach(type -> to1("flat-footed combat maneuvers defense", type + " bonus to armor class", value -> value.source(type)));
-        
+        stat("armor class bonus")
+        .aggN(root);
+        for (final String type : Arrays.asList("armor class", "touch armor class", "combat maneuvers defense")) {
+            for (final boolean flatFooted : Arrays.asList(false, true)) {
+                stat("armor class bonus")
+                .toN((flatFooted ? "flat-footed " : "") + type, 
+                        values -> values
+                        );
+            }
+        }
     }
-
+    
 }

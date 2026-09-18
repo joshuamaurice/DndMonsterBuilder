@@ -12,8 +12,8 @@ import java.util.function.Consumer;
 public class Traversal {
 
     public static <Node> void ordered(
-            final Graph<Node> graph,
-            final Graph<Node> inverse,
+            final Graph<Node, Void> graph,
+            final Graph<Node, Void> inverse,
             final Consumer<Node> action,
             final Executor executor
             ) throws InterruptedException {
@@ -31,11 +31,9 @@ public class Traversal {
         //before we get to the increment of the second task.
         final AtomicInteger runningCount = new AtomicInteger(1);
         
-        final AtomicInteger executedCount = new AtomicInteger(0);
-        
         for (final Node root : inverse.leafs()) {
             runningCount.incrementAndGet();
-            executor.execute(() -> ordered2(graph, action, executor, root, remaining, completion, errors, runningCount, executedCount));
+            executor.execute(() -> ordered2(graph, action, executor, root, remaining, completion, errors, runningCount));
         }
         runningCount.decrementAndGet();
         if (0 == runningCount.get()) {
@@ -49,24 +47,20 @@ public class Traversal {
             }
             throw e1;
         }
-        if (executedCount.get() < graph.nodes().size()) {
+        if (remaining.size() != 0) {
             throw new RuntimeException("detected cycle: " + graph.findShortestCycle());
-        }
-        if (executedCount.get() > graph.nodes().size()) {
-            throw new RuntimeException();
         }
     }
     
     private static <Node> void ordered2(
-            final Graph<Node> graph,
+            final Graph<Node, Void> graph,
             final Consumer<Node> action,
             final Executor executor,
             final Node node,
             final Map<Node, Integer> remaining,
             final Semaphore completion,
             final List<RuntimeException> errors,
-            final AtomicInteger runningCount,
-            final AtomicInteger executedCount
+            final AtomicInteger runningCount
             ) {
         try {
             try {
@@ -76,13 +70,15 @@ public class Traversal {
             }
             if ( ! errors.isEmpty())
                 return;
-            for (final Node nextNode : graph.edges(node)) {
-                if (0 == remaining.compute(nextNode, (k,v) -> --v)) {
+            for (final Map.Entry<Node, Void> nextNode : graph.edges(node).entrySet()) {
+                if (0 == remaining.compute(nextNode.getKey(), (k,v) -> --v)) {
                     runningCount.incrementAndGet();
-                    executor.execute(() -> ordered2(graph, action, executor, nextNode, remaining, completion, errors, runningCount, executedCount));
+                    executor.execute(() -> ordered2(graph, action, executor, nextNode.getKey(), remaining, completion, errors, runningCount));
                 }
             }
-            executedCount.incrementAndGet();
+            if (null == remaining.remove(node)) {
+                throw new RuntimeException("" + node);
+            }
         } catch (Exception e) {
             errors.add(new RuntimeException("Error while running node: " + node + ". Error: " + e.getMessage(), e));
         } finally {

@@ -18,6 +18,7 @@ import jmaurice.dnd.stats.builder.raw.basic.StatBlocks;
 import jmaurice.dnd.stats.builder.raw.creaturetypes.Aberrations;
 import jmaurice.dnd.stats.builder.raw.creaturetypes.Constructs;
 import jmaurice.dnd.stats.builder.raw.creaturetypes.Outsiders;
+import jmaurice.dnd.stats.builder.raw.specabil.EberronFiendPossession;
 import jmaurice.dnd.stats.builder.raw.specabil.Incorporeal;
 import jmaurice.dnd.stats.impl.Stats;
 
@@ -52,6 +53,7 @@ public class StandardStatsBuilder {
         new Outsiders(stats).build();
         
         //RAW special abilities
+        new EberronFiendPossession(stats).build();
         new Incorporeal(stats).build();
         new MiscSpecialAbilities(stats).build();
         

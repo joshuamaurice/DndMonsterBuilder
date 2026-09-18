@@ -12,12 +12,12 @@ public class TyranidAbilityScores extends BaseBuilder {
 
     public void build() {
         base();
-        input("intelligence", Arrays.asList("tyranid", "synapse"), stats -> {
-            if ( ! stats.get("tyranid").getBooleanValue(false))
+        input1("intelligence", Arrays.asList("tyranid", "synapse"), stats -> {
+            if (stats.get("tyranid").getValues().size() == 0)
                 return null;
-            if ( ! stats.get("synapse").getBooleanValue(false))
+            if (stats.get("synapse").getValues().size() == 0)
                 return null;
-            return new Value(8, "synapse");
+            return new Value(8).source("synapse");
         });
         size();
         advancement();
@@ -25,17 +25,17 @@ public class TyranidAbilityScores extends BaseBuilder {
     }
     
     private void base() {
-        to1("strength",     "tyranid", new Value(11));
-        to1("dexterity",    "tyranid", new Value(10));
-        to1("constitution", "tyranid", new Value(11));
-        to1("intelligence", "tyranid", new Value(2));
-        to1("wisdom",       "tyranid", new Value(10));
-        to1("charisma",     "tyranid", new Value(5));
+        stat("tyranid").to1("strength",     new Value(11));
+        stat("tyranid").to1("dexterity",    new Value(10));
+        stat("tyranid").to1("constitution", new Value(11));
+        stat("tyranid").to1("intelligence", new Value(2));
+        stat("tyranid").to1("wisdom",       new Value(10));
+        stat("tyranid").to1("charisma",     new Value(5));
     }
     
     private void size() {
-        input("strength", Arrays.asList("tyranid", "size"), stats -> {
-            if ( ! stats.get("tyranid").getBooleanValue(false))
+        input1("strength", Arrays.asList("tyranid", "size"), stats -> {
+            if (stats.get("tyranid").getValues().size() == 0)
                 return null;
             final String size = stats.get("size").getStringValue();
             if (size == null)
@@ -53,10 +53,10 @@ public class TyranidAbilityScores extends BaseBuilder {
                 case "colossal-plus" -> 21;
                 default -> throw new RuntimeException("unexpected size value: " + size);
             };
-            return new Value(output, "size");
+            return new Value(output).source("size");
         });
-        input("dexterity", Arrays.asList("tyranid", "size"), stats -> {
-            if ( ! stats.get("tyranid").getBooleanValue(false))
+        input1("dexterity", Arrays.asList("tyranid", "size"), stats -> {
+            if (stats.get("tyranid").getValues().size() == 0)
                 return null;
             final String size = stats.get("size").getStringValue();
             if (size == null)
@@ -74,10 +74,10 @@ public class TyranidAbilityScores extends BaseBuilder {
                 case "colossal-plus" -> -10;
                 default -> throw new RuntimeException("unexpected size value: " + size);
             };
-            return new Value(output, "size");
+            return new Value(output).source("size");
         });
-        input("constitution", Arrays.asList("tyranid", "size"), stats -> {
-            if ( ! stats.get("tyranid").getBooleanValue(false))
+        input1("constitution", Arrays.asList("tyranid", "size"), stats -> {
+            if (stats.get("tyranid").getValues().size() == 0)
                 return null;
             final String size = stats.get("size").getStringValue();
             if (size == null)
@@ -95,94 +95,94 @@ public class TyranidAbilityScores extends BaseBuilder {
                 case "colossal-plus" -> 10;
                 default -> throw new RuntimeException("unexpected size value: " + size);
             };
-            return new Value(output, "size");
+            return new Value(output).source("size");
         });
     }
         
     private void advancement() {
-        input("strength", Arrays.asList("tyranid", "aberration hit dice"), stats -> {
-            if ( ! stats.get("tyranid").getBooleanValue(false))
+        input1("strength", Arrays.asList("tyranid", "aberration hit dice"), stats -> {
+            if (stats.get("tyranid").getValues().size() == 0)
                 return null;
             final Integer numHitDice = stats.get("aberration hit dice").getIntValue();
             if (numHitDice == null)
                 return null;
-            return new Value((int)Math.floor(numHitDice * 0.8), "advancement");
+            return new Value((int)Math.floor(numHitDice * 0.8)).source("advancement");
         });
-        input("dexterity", Arrays.asList("tyranid", "aberration hit dice"), stats -> {
-            if ( ! stats.get("tyranid").getBooleanValue(false))
+        input1("dexterity", Arrays.asList("tyranid", "aberration hit dice"), stats -> {
+            if (stats.get("tyranid").getValues().size() == 0)
                 return null;
             final Integer numHitDice = stats.get("aberration hit dice").getIntValue();
             if (numHitDice == null)
                 return null;
-            return new Value((int)Math.floor(numHitDice * 0.8), "advancement");
+            return new Value((int)Math.floor(numHitDice * 0.8)).source("advancement");
         });
-        input("constitution", Arrays.asList("tyranid", "aberration hit dice"), stats -> {
-            if ( ! stats.get("tyranid").getBooleanValue(false))
+        input1("constitution", Arrays.asList("tyranid", "aberration hit dice"), stats -> {
+            if (stats.get("tyranid").getValues().size() == 0)
                 return null;
             final Integer numHitDice = stats.get("aberration hit dice").getIntValue();
             if (numHitDice == null)
                 return null;
-            return new Value((int)Math.floor(numHitDice * 0.4), "advancement");
+            return new Value((int)Math.floor(numHitDice * 0.4)).source("advancement");
         });
-        input("intelligence", Arrays.asList("tyranid", "aberration hit dice", "synapse"), stats -> {
-            if ( ! stats.get("tyranid").getBooleanValue(false))
+        input1("intelligence", Arrays.asList("tyranid", "aberration hit dice", "synapse"), stats -> {
+            if (stats.get("tyranid").getValues().size() == 0)
                 return null;
-            if ( ! stats.get("synapse").getBooleanValue(false))
+            if (stats.get("synapse").getValues().size() == 0)
                 return null;
             final Integer numHitDice = stats.get("aberration hit dice").getIntValue();
             if (numHitDice == null)
                 return null;
-            return new Value((int)Math.floor(numHitDice * 0.2), "advancement");
+            return new Value((int)Math.floor(numHitDice * 0.2)).source("advancement");
         });
-        input("wisdom", Arrays.asList("tyranid", "aberration hit dice"), stats -> {
-            if ( ! stats.get("tyranid").getBooleanValue(false))
+        input1("wisdom", Arrays.asList("tyranid", "aberration hit dice"), stats -> {
+            if (stats.get("tyranid").getValues().size() == 0)
                 return null;
             final Integer numHitDice = stats.get("aberration hit dice").getIntValue();
             if (numHitDice == null)
                 return null;
-            return new Value((int)Math.floor(numHitDice * 0.2), "advancement");
+            return new Value((int)Math.floor(numHitDice * 0.2)).source("advancement");
         });
-        input("charisma", Arrays.asList("tyranid", "aberration hit dice"), stats -> {
-            if ( ! stats.get("tyranid").getBooleanValue(false))
+        input1("charisma", Arrays.asList("tyranid", "aberration hit dice"), stats -> {
+            if (stats.get("tyranid").getValues().size() == 0)
                 return null;
             final Integer numHitDice = stats.get("aberration hit dice").getIntValue();
             if (numHitDice == null)
                 return null;
-            return new Value((int)Math.floor(numHitDice * 0.2), "advancement");
+            return new Value((int)Math.floor(numHitDice * 0.2)).source("advancement");
         });
     }
     
     private void leadership() {
-        agg("40k 9th ed leadership", root);
-        input("intelligence", Arrays.asList("tyranid", "40k 9th ed leadership"), stats -> {
-            if ( ! stats.get("tyranid").getBooleanValue(false))
+        stat("40k 9th ed leadership").agg(root);
+        input1("intelligence", Arrays.asList("tyranid", "40k 9th ed leadership"), stats -> {
+            if (stats.get("tyranid").getValues().size() == 0)
                 return null;
             final Integer leadership = stats.get("40k 9th ed leadership").getIntValue();
             if (leadership == null)
                 return null;
             if (leadership <= 5)
                 return null;
-            return new Value(2 * (leadership - 5), "leadership");
+            return new Value(2 * (leadership - 5)).source("leadership");
         });
-        input("wisdom", Arrays.asList("tyranid", "40k 9th ed leadership"), stats -> {
-            if ( ! stats.get("tyranid").getBooleanValue(false))
+        input1("wisdom", Arrays.asList("tyranid", "40k 9th ed leadership"), stats -> {
+            if (stats.get("tyranid").getValues().size() == 0)
                 return null;
             final Integer leadership = stats.get("40k 9th ed leadership").getIntValue();
             if (leadership == null)
                 return null;
             if (leadership <= 5)
                 return null;
-            return new Value(2 * (leadership - 5), "leadership");
+            return new Value(2 * (leadership - 5)).source("leadership");
         });
-        input("charisma", Arrays.asList("tyranid", "40k 9th ed leadership"), stats -> {
-            if ( ! stats.get("tyranid").getBooleanValue(false))
+        input1("charisma", Arrays.asList("tyranid", "40k 9th ed leadership"), stats -> {
+            if (stats.get("tyranid").getValues().size() == 0)
                 return null;
             final Integer leadership = stats.get("40k 9th ed leadership").getIntValue();
             if (leadership == null)
                 return null;
             if (leadership <= 5)
                 return null;
-            return new Value(2 * (leadership - 5), "leadership");
+            return new Value(2 * (leadership - 5)).source("leadership");
         });
     }
     

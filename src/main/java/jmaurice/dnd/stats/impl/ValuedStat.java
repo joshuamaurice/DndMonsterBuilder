@@ -71,8 +71,6 @@ public class ValuedStat {
         throw new RuntimeException("Stat " + stat.name() + "; expected 1 value; found: " + values);
     }
     
-    public Boolean getBooleanValue() { return val01().map(x -> x.getBooleanValue()).orElse(null); }
-    public Boolean getBooleanValue(boolean defaultValue) { return val01().map(x -> x.getBooleanValue()).orElse(defaultValue); }
     public Double getDoubleValue() { return val01().map(x -> x.getDoubleValue()).orElse(null); }
     public Integer getIntValue() { return val01().map(x -> x.getIntValue()).orElse(null); }
     public String getStringValue() { return val01().map(x -> x.getStringValue()).orElse(null); }

@@ -11,8 +11,9 @@ public class SizeSpaceReach extends BaseBuilder {
     public SizeSpaceReach(final Stats stats) { super(stats); }
 
     public void build() {
-        agg("size", rootleaf);
-        to1("size modifier to attack", "size", value -> {
+        stat("size").agg(rootleaf);
+        
+        stat("size").to1("size modifier to attack", value -> {
             final int x = switch (value.getStringValue()) {
                 case "fine"       -> 8;
                 case "diminutive" -> 4;
@@ -26,10 +27,10 @@ public class SizeSpaceReach extends BaseBuilder {
                 case "colossal-plus" -> -12;
                 default -> throw new RuntimeException("unrecognized size value >>" + value + "<<");
             };
-            return new Value(x, "size");
+            return new Value(x).source("size");
         });
         
-        to1("size modifier to fly", "size", value -> {
+        stat("size").to1("size modifier to fly", value -> {
             final int x = switch (value.getStringValue()) {
                 case "fine"       -> 8;
                 case "diminutive" -> 6;
@@ -43,9 +44,10 @@ public class SizeSpaceReach extends BaseBuilder {
                 case "colossal-plus" -> -10;
                 default -> throw new RuntimeException("unrecognized size value >>" + value + "<<");
             };
-            return new Value(x, "size");
+            return new Value(x).source("size");
         });
-        to1("size modifier to stealth", "size", value -> {
+        
+        stat("size").to1("size modifier to stealth", value -> {
             final int x = switch (value.getStringValue()) {
                 case "fine"       -> 16;
                 case "diminutive" -> 12;
@@ -59,11 +61,11 @@ public class SizeSpaceReach extends BaseBuilder {
                 case "colossal-plus" -> -20;
                 default -> throw new RuntimeException("unrecognized size value >>" + value + "<<");
             };
-            return new Value(x, "size");
+            return new Value(x).source("size");
         });
         
-        agg("space", leaf);
-        to1("space", "size", value -> {
+        stat("size")
+        .to1("space", value -> {
             final String space = switch (value.getStringValue()) {
                 case "fine"       -> "1/2";
                 case "diminutive" -> "1";
@@ -78,15 +80,15 @@ public class SizeSpaceReach extends BaseBuilder {
                 default -> throw new RuntimeException("unrecognized size value >>" + value + "<<");
             };
             return new Value(space + " ft");
-        });
+        })
+        .agg(leaf);
         
-        agg("reach", leaf);
-        agg("short creature reach", root);
-        input("reach", Arrays.asList("size", "short creature reach"), stats -> {
+        stat("short creature reach").agg(root);
+        input1("reach", Arrays.asList("size", "short creature reach"), stats -> {
             final String size = stats.get("size").getStringValue();
             if (size == null)
                 return null;
-            final boolean shortCreatureReach = stats.get("short creature reach").getBooleanValue(false);
+            final boolean shortCreatureReach = stats.get("short creature reach").getValues().size() > 0;
             final String reach = switch (size) {
                 case "fine"       -> "0";
                 case "diminutive" -> "0";
@@ -101,7 +103,8 @@ public class SizeSpaceReach extends BaseBuilder {
                 default -> throw new RuntimeException("unrecognized size value >>" + size + "<<");
             };
             return new Value(reach + " ft");
-        });
+        })
+        .agg(leaf);
     }
 
 }

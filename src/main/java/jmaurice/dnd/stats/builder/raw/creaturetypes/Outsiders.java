@@ -6,67 +6,92 @@ import java.util.List;
 import java.util.Set;
 
 import jmaurice.dnd.stats.builder.BaseBuilder;
+import jmaurice.dnd.stats.builder.raw.basic.Saves;
+import jmaurice.dnd.stats.builder.raw.basic.Skills;
 import jmaurice.dnd.stats.impl.Stats;
 import jmaurice.dnd.stats.impl.Value;
 
 public class Outsiders extends BaseBuilder {
+    
+    public static final List<String> classSkills = Arrays.asList(
+            "acrobatics", "climb", "escape artist", "fly", "intimidate", 
+            "perception", "spellcraft", "stealth", "survival", "swim"
+            //plus one more which depends on the outsider
+            );
 
     public Outsiders(final Stats stats) { super(stats); }
 
     public void build() {
         //outsider hit dice
-        agg("outsider hit dice", root, values -> sumAsInts(values));
-        to1("hit dice", "outsider hit dice", input -> new Value(input.getIntValue() + "d10", "outsider"));
-        to1("base attack bonus", "outsider hit dice", input -> input.mult(1.00).source("outsider"));
-        saves();
+        stat("outsider hit dice").agg(root, values -> sumAsInts(values));
+        stat("outsider hit dice").to1("hit dice", input -> new Value(input.getIntValue() + "d10").source("outsider"));
+        stat("outsider hit dice").to1("base attack bonus", input -> input.mult(1.00).source("outsider"));
+        chooseTwoGoodSaves();
+        chooseOneAdditionalClassSkill();
+        
         //epic outsider hit dice
-        agg("epic outsider hit dice", root, values -> sumAsInts(values));
-        to1("hit dice", "epic outsider hit dice", input -> new Value(input.getIntValue() + "d10", "epic outsider"));
-        to1("base attack bonus", "epic outsider hit dice", input -> input.mult(0.5).source("epic outsider"));
-        Arrays.asList("fortitude", "reflex", "will").forEach(save -> 
-                to1(save, "epic outsider hit dice", input -> input.mult(0.5).source("epic outsider")));
+        stat("epic outsider hit dice").agg(root, values -> sumAsInts(values));
+        stat("epic outsider hit dice").to1("hit dice", input -> new Value(input.getIntValue() + "d10").source("epic outsider"));
+        stat("epic outsider hit dice").to1("epic base attack bonus", input -> input.mult(0.5).source("epic outsider"));
+        Saves.saves.forEach(save -> stat("epic outsider hit dice").to1(save, input -> input.mult(0.5).source("epic outsider")));
+        
         //outsider creature type
-        to1("outsider", "creature type", input -> input.getStringValue().equals("outsider") ? new Value(true) : null);
-        to1("senses", "outsider", new Value("darkvision 60 ft")); 
-        final List<String> classSkills = Arrays.asList(
-                "acrobatics", "climb", "escape artist", "fly", "intimidate", 
-                "perception", "spellcraft", "stealth", "survival", "swim"
-                //"knowledge (pick one)
-                );
-        classSkills.forEach(skill -> to1(skill + " class skill", "outsider", input -> new Value(true, "aberration")));
+        stat("creature type").to1("outsider", input -> input.getStringValue().equals("outsider") ? new Value(true) : null);
+        stat("outsider").to1("senses", new Value("darkvision 60 ft")); 
+        classSkills.forEach(skill -> stat("outsider").to1(skill + " class skill", input -> new Value(true).source("aberration")));
     }
     
-    private void saves() {
-        agg("outsider good saves", root, values -> {
+    private void chooseTwoGoodSaves() {
+        stat("outsider good saves").aggN(root, values -> {
             if (values.isEmpty())
-                return null;
+                throw new RuntimeException("expected \"good outsider saves\" would have exactly two unique values");
             if (values.size() != 2)
-                throw new RuntimeException("expected exactly two outsider good saves");
-            final Set<String> goodSaves = new LinkedHashSet<>(values.stream().map(x -> x.getStringValue()).toList());
-            if (goodSaves.size() != 2)
-                throw new RuntimeException("expected exactly two outsider good saves");
-            for (final String goodSave : goodSaves) {
-                if ( ! Arrays.asList("fortitude", "reflex", "will").contains(goodSave))
-                    throw new RuntimeException("invalid outsider good save: " + goodSave);
+                throw new RuntimeException("<b>ERROR expected \"outsider good saves\" would have exactly two unique values</b>");
+            final Set<String> valuesUnique = new LinkedHashSet<>(values.stream().map(x -> x.getStringValue()).toList());
+            if (valuesUnique.size() != 2)
+                throw new RuntimeException("<b>ERROR expected \"outsider good saves\" would have exactly two unique values</b>");
+            for (final String value : valuesUnique) {
+                if ( ! Arrays.asList("fortitude", "reflex", "will").contains(value))
+                    throw new RuntimeException("invalid value \"" + value + "\" for \"outsider good saves\"");
             }
-            return join(sort(values), ", ").orElse(null);
+            return values;
         });
         
-        for (final String save : Arrays.asList("fortitude", "reflex", "will")) {
-            input(save + " bad levels", Arrays.asList("outsider hit dice", "outsider good saves"), stats -> {
+        for (final String save : Saves.saves) {
+            input1(save + " bad levels", Arrays.asList("outsider hit dice", "outsider good saves"), stats -> {
                 final Integer outsiderHitDice = stats.get("outsider hit dice").getIntValue();
                 if (outsiderHitDice == null)
                     return null;
-                if (stats.get("outsider good saves").val1().getStringValue().contains(save))
+                if (stats.get("outsider good saves").getValues().stream().filter(x -> x.getStringValue().equals(save)).findAny().isEmpty())
                     return null;
-                return new Value(outsiderHitDice, "outsider");
+                return new Value(outsiderHitDice).source("outsider");
             });
-            input(save + " good levels", Arrays.asList("outsider hit dice", "outsider good saves"), stats -> {
+            input1(save + " good levels", Arrays.asList("outsider hit dice", "outsider good saves"), stats -> {
                 final Integer outsiderHitDice = stats.get("outsider hit dice").getIntValue();
                 if (outsiderHitDice == null)
                     return null;
-                if (stats.get("outsider good saves").val1().getStringValue().contains(save))
-                    return new Value(outsiderHitDice, "outsider");
+                if (stats.get("outsider good saves").getValues().stream().filter(x -> x.getStringValue().equals(save)).findAny().isPresent())
+                    return new Value(outsiderHitDice).source("outsider");
+                return null;
+            });
+        }
+    }
+    
+    private void chooseOneAdditionalClassSkill() {
+        stat("outsider additional class skill").aggN(root, values -> {
+            if (values.size() != 1)
+                throw new RuntimeException("expected \"outsider additional class skill\" would have exactly one value");
+            final String value = values.get(0).getStringValue();
+            if ( ! Skills.allSkills.contains(value))
+                throw new RuntimeException("invalid value \"" + value + "\" for \"outsider additional class skill\"");
+            return values;
+        });
+        for (final String skill : Skills.allSkills) {
+            input1(skill + " class skill", Arrays.asList("outsider hit dice", "outsider additional class skill"), stats -> {
+                if (stats.get("outsider hit dice").getValues().isEmpty())
+                    return null;
+                if (stats.get("outsider additional class skill").val1().getStringValue().equals(skill))
+                    return new Value(1);
                 return null;
             });
         }
